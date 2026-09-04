@@ -1,0 +1,23 @@
+# Maven build output
+/target/
+
+# Runtime logs
+/logs/
+
+# IDE metadata
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# Java and tool caches
+*.class
+*.log
+hs_err_pid*
+.recommenders/
+
+# OS files
+.DS_Store
+Thumbs.db
