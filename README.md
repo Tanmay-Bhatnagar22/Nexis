@@ -114,6 +114,47 @@ Example:
 
 ---
 
+## Real-Time Alerts & Security Logging
+
+Nexis includes a modular alert and logging subsystem that processes events from both the real-time monitor (`watch`) and the integrity scanner (`scan`).
+
+### Security Event Types
+
+| Event Type | Severity | Trigger |
+|---|---|---|
+| `FILE_CREATED` | `INFO` | A new file appears in the monitored directory |
+| `FILE_MODIFIED` | `WARNING` | An existing monitored file is changed |
+| `FILE_DELETED` | `WARNING` | A monitored file is removed |
+| `INTEGRITY_VIOLATION` | `CRITICAL` | A file's SHA-256 hash differs from its baseline |
+| `MONITORING_ERROR` | `ERROR` | An unexpected error in the real-time watch loop |
+| `SYSTEM_ERROR` | `ERROR` | An unexpected error during a scan operation |
+
+### CLI Alert Format
+
+```
+   [2026-09-06 14:32:18] [INFO]     FILE_CREATED        Path: C:\watch\report.txt  Details: File creation detected.
+   [2026-09-06 14:33:01] [WARNING]  FILE_MODIFIED       Path: C:\watch\config.xml  Details: File modification detected.
+!! [2026-09-06 14:35:42] [CRITICAL] INTEGRITY_VIOLATION Path: C:\watch\config.xml  Details: SHA-256 hash differs from baseline.
+```
+
+`CRITICAL` and `ERROR` events are prefixed with `!!` for visual prominence.
+
+### Persistent Log File
+
+All events are appended to `logs/nexis.log` in the working directory:
+
+```
+2026-09-06 14:32:18 | INFO     | FILE_CREATED         | C:\watch\report.txt | File creation detected.
+2026-09-06 14:35:42 | CRITICAL | INTEGRITY_VIOLATION  | C:\watch\config.xml | SHA-256 hash differs from baseline.
+```
+
+- Log directory and file are created automatically on first write.
+- Events are appended — existing log entries are never overwritten.
+- Logging failures are reported to `stderr` and never crash the monitoring engine.
+- `logs/nexis.log` is excluded from version control (`.gitignore`).
+
+---
+
 ## Architecture
 
 ```
@@ -122,8 +163,15 @@ com.nexis
 ├── cli/
 │   ├── NexisCLI.java                  # Root picocli command
 │   ├── BaselineCommand.java           # 'baseline' subcommand
-│   ├── ScanCommand.java               # 'scan' subcommand
+│   ├── ScanCommand.java               # 'scan' subcommand + event dispatch
+│   ├── WatchCommand.java              # 'watch' subcommand + event dispatch
 │   └── ResultFormatter.java           # CLI output formatter
+├── alert/
+│   ├── EventType.java                 # FILE_CREATED/MODIFIED/DELETED/INTEGRITY_VIOLATION/...
+│   ├── Severity.java                  # INFO/WARNING/CRITICAL/ERROR
+│   ├── SecurityEvent.java             # Immutable event value object
+│   ├── AlertManager.java              # CLI alert formatter/printer
+│   └── SecurityLogger.java            # Append-only log file writer
 ├── baseline/
 │   ├── BaselineEntry.java             # Path → SHA-256 record
 │   ├── BaselineManager.java           # In-memory baseline management
@@ -135,8 +183,23 @@ com.nexis
 │   ├── ComparisonEntry.java           # Per-file comparison result
 │   ├── ComparisonResult.java          # Structured result container
 │   └── ComparisonStatus.java          # NEW/MODIFIED/DELETED/UNCHANGED enum
+├── monitor/
+│   ├── DirectoryMonitor.java          # WatchService real-time monitor
+│   ├── MonitorEvent.java              # Raw FS event (path + type)
+│   └── MonitorEventType.java          # CREATED/MODIFIED/DELETED
 └── scanner/
     └── FileScanner.java               # Recursive file discovery
+```
+
+**Event flow:**
+```
+WatchService -> DirectoryMonitor -> MonitorEvent -> WatchCommand
+                                                        |
+                                                SecurityEvent
+                                               /            \
+                                       AlertManager    SecurityLogger
+                                           |                 |
+                                       CLI output      logs/nexis.log
 ```
 
 ---
