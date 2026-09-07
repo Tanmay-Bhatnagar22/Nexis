@@ -92,5 +92,19 @@ class EventStorageTest {
         Files.writeString(eventFile, "{ not valid json ");
         assertThrows(IOException.class, () -> storage.readEvents(eventFile));
     }
+
+    @Test
+    @DisplayName("7. Reading file with unsupported future schema version throws IOException")
+    void readUnsupportedSchemaVersionThrowsIOException() throws IOException {
+        String futureJson = """
+            {
+              "version": 999,
+              "events": []
+            }
+            """;
+        Files.writeString(eventFile, futureJson);
+        IOException ex = assertThrows(IOException.class, () -> storage.readEvents(eventFile));
+        assertTrue(ex.getMessage().contains("Unsupported event storage schema version: 999"));
+    }
 }
 

@@ -113,6 +113,13 @@ public class EventStorage {
             return Collections.emptyList();
         }
 
+        if (document.version > SCHEMA_VERSION) {
+            throw new IOException(
+                "Unsupported event storage schema version: " + document.version
+                    + " (maximum supported: " + SCHEMA_VERSION + ")"
+            );
+        }
+
         List<SecurityEvent> result = new ArrayList<>();
         for (EventDto dto : document.events) {
             if (dto == null || dto.eventType == null || dto.severity == null || dto.details == null) {
