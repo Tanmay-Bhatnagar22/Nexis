@@ -26,10 +26,6 @@ class BaselineCommandTest {
         Files.writeString(tempDir.resolve("alpha.txt"), "Alpha content", StandardCharsets.UTF_8);
         Files.writeString(tempDir.resolve("beta.txt"), "Beta content", StandardCharsets.UTF_8);
 
-        Path baselineDir = tempDir.resolve("output");
-        Files.createDirectories(baselineDir);
-        Path baselineFile = baselineDir.resolve("baseline.json");
-
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 

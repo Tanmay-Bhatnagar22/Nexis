@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.nexis.baseline.BaselineManager;
-import com.nexis.baseline.BaselineStorage;
 import com.nexis.scanner.FileScanner;
 
 import picocli.CommandLine;

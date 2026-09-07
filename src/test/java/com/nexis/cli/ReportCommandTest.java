@@ -28,12 +28,12 @@ class ReportCommandTest {
     private final Path defaultEventsPath = EventRepository.DEFAULT_EVENTS_PATH;
 
     @BeforeEach
-    void cleanEventsBefore() throws IOException {
+    void setUp() throws IOException {
         Files.deleteIfExists(defaultEventsPath);
     }
 
     @AfterEach
-    void cleanEventsAfter() throws IOException {
+    void tearDown() throws IOException {
         Files.deleteIfExists(defaultEventsPath);
     }
 

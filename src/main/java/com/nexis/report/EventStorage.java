@@ -134,12 +134,8 @@ public class EventStorage {
     }
 
     private static class EventDocument {
-        @SuppressWarnings("unused")
         int version;
         List<EventDto> events;
-
-        @SuppressWarnings("unused")
-        EventDocument() {}
 
         EventDocument(int version, List<EventDto> events) {
             this.version = version;
@@ -153,9 +149,6 @@ public class EventStorage {
         String severity;
         String filePath;
         String details;
-
-        @SuppressWarnings("unused")
-        EventDto() {}
 
         EventDto(String timestamp, String eventType, String severity, String filePath, String details) {
             this.timestamp = timestamp;
