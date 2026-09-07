@@ -13,7 +13,7 @@ import picocli.CommandLine.Spec;
     version = "1.0.0",
     description = "File Integrity & Host Monitor",
     mixinStandardHelpOptions = true,
-    subcommands = { BaselineCommand.class, ScanCommand.class, WatchCommand.class }
+    subcommands = { BaselineCommand.class, ScanCommand.class, WatchCommand.class, ReportCommand.class }
 )
 public class NexisCLI implements Callable<Integer> {
 

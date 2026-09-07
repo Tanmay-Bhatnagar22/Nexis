@@ -11,6 +11,7 @@ import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
 import com.nexis.alert.SecurityLogger;
 import com.nexis.alert.Severity;
+import com.nexis.report.EventRepository;
 import com.nexis.integrity.HashCalculator;
 import com.nexis.monitor.DirectoryMonitor;
 import com.nexis.monitor.MonitorEvent;
@@ -73,6 +74,7 @@ public class WatchCommand implements Callable<Integer> {
 
         AlertManager alertManager = new AlertManager(out);
         SecurityLogger securityLogger = new SecurityLogger();
+        EventRepository eventRepository = EventRepository.loadOrDefault();
 
         // try-with-resources guarantees the WatchService is closed on every exit path
         try (DirectoryMonitor monitor = new DirectoryMonitor(directory)) {
@@ -80,6 +82,10 @@ public class WatchCommand implements Callable<Integer> {
             // Shutdown hook ensures the WatchService is closed on Ctrl+C
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 monitor.stop();
+                try {
+                    eventRepository.save();
+                } catch (IOException ignored) {
+                }
                 out.println();
                 out.println("[WATCH] Stopped.");
                 out.flush();
@@ -90,7 +96,7 @@ public class WatchCommand implements Callable<Integer> {
             out.flush();
 
             // Blocks until stop() is called (e.g. via Ctrl+C shutdown hook)
-            monitor.start(event -> dispatchEvent(event, alertManager, securityLogger));
+            monitor.start(event -> dispatchEvent(event, alertManager, securityLogger, eventRepository));
 
         } catch (IOException e) {
             err.println("Error: Failed to initialize file watcher — " + e.getMessage());
@@ -102,7 +108,7 @@ public class WatchCommand implements Callable<Integer> {
 
     /**
      * Translates a raw {@link MonitorEvent} into a {@link SecurityEvent} and
-     * dispatches it to both the alert manager and security logger.
+     * dispatches it to the alert manager, security logger, and event repository.
      *
      * <p>Event mappings:
      * <ul>
@@ -111,13 +117,15 @@ public class WatchCommand implements Callable<Integer> {
      *   <li>DELETED  → FILE_DELETED / WARNING</li>
      * </ul>
      *
-     * @param event         the raw filesystem event from the WatchService
-     * @param alertManager  alert display component
+     * @param event          the raw filesystem event from the WatchService
+     * @param alertManager   alert display component
      * @param securityLogger persistent logging component
+     * @param eventRepository event repository for reporting
      */
     private void dispatchEvent(MonitorEvent event,
                                AlertManager alertManager,
-                               SecurityLogger securityLogger) {
+                               SecurityLogger securityLogger,
+                               EventRepository eventRepository) {
         Path file = event.filePath();
 
         try {
@@ -146,6 +154,11 @@ public class WatchCommand implements Callable<Integer> {
 
             alertManager.alert(secEvent);
             securityLogger.log(secEvent);
+            eventRepository.add(secEvent);
+            try {
+                eventRepository.save();
+            } catch (IOException ignored) {
+            }
 
         } catch (Exception e) {
             // Unexpected error in event dispatch — report as MONITORING_ERROR, never crash the loop
@@ -156,6 +169,11 @@ public class WatchCommand implements Callable<Integer> {
             );
             alertManager.alert(errEvent);
             securityLogger.log(errEvent);
+            eventRepository.add(errEvent);
+            try {
+                eventRepository.save();
+            } catch (IOException ignored) {
+            }
         }
     }
 

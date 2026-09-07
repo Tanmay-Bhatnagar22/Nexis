@@ -12,6 +12,7 @@ import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
 import com.nexis.alert.SecurityLogger;
 import com.nexis.alert.Severity;
+import com.nexis.report.EventRepository;
 import com.nexis.baseline.BaselineManager;
 import com.nexis.baseline.BaselineStorageException;
 import com.nexis.integrity.ComparisonEngine;
@@ -94,8 +95,15 @@ public class ScanCommand implements Callable<Integer> {
             // Emit security events for all notable findings
             AlertManager alertManager = new AlertManager(out);
             SecurityLogger securityLogger = new SecurityLogger();
+            EventRepository eventRepository = EventRepository.loadOrDefault();
 
-            emitIntegrityEvents(result, alertManager, securityLogger);
+            emitIntegrityEvents(result, alertManager, securityLogger, eventRepository);
+            try {
+                eventRepository.save();
+            } catch (IOException e) {
+                // Non-fatal, reporting storage failure must not crash scan
+                System.err.println("[NEXIS] Warning: Failed to save event repository — " + e.getMessage());
+            }
 
             return result.isClean() ? 0 : 1;
 
@@ -107,17 +115,19 @@ public class ScanCommand implements Callable<Integer> {
 
     /**
      * Iterates the {@link ComparisonResult} and emits one {@link SecurityEvent}
-     * per notable entry to both the alert manager and security logger.
+     * per notable entry to alert manager, security logger, and event repository.
      *
      * <p>Only actionable findings are emitted — UNCHANGED files produce no event.
      *
      * @param result          the comparison result from the integrity engine
      * @param alertManager    alert display component
      * @param securityLogger  persistent logging component
+     * @param eventRepository event repository for reporting
      */
     private static void emitIntegrityEvents(ComparisonResult result,
                                             AlertManager alertManager,
-                                            SecurityLogger securityLogger) {
+                                            SecurityLogger securityLogger,
+                                            EventRepository eventRepository) {
         // MODIFIED → INTEGRITY_VIOLATION / CRITICAL (hash mismatch = tamper indicator)
         for (ComparisonEntry entry : result.getModified()) {
             String details = "SHA-256 hash differs from baseline — possible tampering detected."
@@ -127,6 +137,7 @@ public class ScanCommand implements Callable<Integer> {
                 EventType.INTEGRITY_VIOLATION, Severity.CRITICAL, entry.filePath(), details);
             alertManager.alert(event);
             securityLogger.log(event);
+            eventRepository.add(event);
         }
 
         // DELETED → FILE_DELETED / WARNING
@@ -136,6 +147,7 @@ public class ScanCommand implements Callable<Integer> {
                 "Baselined file no longer exists on disk.");
             alertManager.alert(event);
             securityLogger.log(event);
+            eventRepository.add(event);
         }
 
         // NEW → FILE_CREATED / INFO
@@ -145,6 +157,7 @@ public class ScanCommand implements Callable<Integer> {
                 "File exists on disk but has no baseline entry.");
             alertManager.alert(event);
             securityLogger.log(event);
+            eventRepository.add(event);
         }
 
         // Scan errors → SYSTEM_ERROR / ERROR
@@ -154,6 +167,7 @@ public class ScanCommand implements Callable<Integer> {
                 "Scan error: " + error.getValue());
             alertManager.alert(event);
             securityLogger.log(event);
+            eventRepository.add(event);
         }
     }
 }

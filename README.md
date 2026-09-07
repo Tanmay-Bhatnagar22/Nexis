@@ -155,6 +155,54 @@ All events are appended to `logs/nexis.log` in the working directory:
 
 ---
 
+## Security Event Reporting & Investigation
+
+Nexis provides structured reporting and filtering for forensic investigation across detected security events:
+
+```bash
+# View complete security report
+nexis report
+
+# Filter by severity
+nexis report --severity CRITICAL
+
+# Filter by event type
+nexis report --type INTEGRITY_VIOLATION
+
+# Filter by affected file path
+nexis report --path C:\watch\config.xml
+
+# Clear stored events
+nexis report --clear
+```
+
+### Sample Report Output
+
+```
+NEXIS SECURITY REPORT
+────────────────────────────────────
+
+Total Events       : 3
+Critical Events    : 1
+Warnings           : 1
+Errors             : 0
+Informational      : 1
+
+EVENT BREAKDOWN
+────────────────────────────────────
+FILE_CREATED          1
+FILE_DELETED          1
+INTEGRITY_VIOLATION   1
+
+CRITICAL EVENTS
+────────────────────────────────────
+[21:23:53] INTEGRITY_VIOLATION
+Path: C:\watch\config.xml
+Details: SHA-256 hash differs from baseline — possible tampering detected.
+```
+
+---
+
 ## Architecture
 
 ```
@@ -165,7 +213,12 @@ com.nexis
 │   ├── BaselineCommand.java           # 'baseline' subcommand
 │   ├── ScanCommand.java               # 'scan' subcommand + event dispatch
 │   ├── WatchCommand.java              # 'watch' subcommand + event dispatch
-│   └── ResultFormatter.java           # CLI output formatter
+│   ├── ReportCommand.java             # 'report' subcommand (investigation)
+│   └── ResultFormatter.java           # CLI scan formatter
+├── report/
+│   ├── EventRepository.java           # In-memory structured event store & query
+│   ├── EventStorage.java              # JSON persistence (data/events.json)
+│   └── ReportGenerator.java           # Structured security report renderer
 ├── alert/
 │   ├── EventType.java                 # FILE_CREATED/MODIFIED/DELETED/INTEGRITY_VIOLATION/...
 │   ├── Severity.java                  # INFO/WARNING/CRITICAL/ERROR
@@ -193,13 +246,10 @@ com.nexis
 
 **Event flow:**
 ```
-WatchService -> DirectoryMonitor -> MonitorEvent -> WatchCommand
-                                                        |
-                                                SecurityEvent
-                                               /            \
-                                       AlertManager    SecurityLogger
-                                           |                 |
-                                       CLI output      logs/nexis.log
+WatchService / ScanEngine -> SecurityEvent
+                                 ├── AlertManager   → CLI alerts
+                                 ├── SecurityLogger → logs/nexis.log
+                                 └── EventRepository → ReportGenerator → CLI report
 ```
 
 ---

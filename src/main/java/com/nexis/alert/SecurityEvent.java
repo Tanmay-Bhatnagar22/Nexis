@@ -27,12 +27,16 @@ public final class SecurityEvent {
     /**
      * Private constructor. Use the static factory methods to create instances.
      */
-    private SecurityEvent(EventType eventType, Severity severity, Path filePath, String details) {
-        this.timestamp = Instant.now();
+    private SecurityEvent(Instant timestamp, EventType eventType, Severity severity, Path filePath, String details) {
+        this.timestamp = Objects.requireNonNull(timestamp, "timestamp cannot be null");
         this.eventType = Objects.requireNonNull(eventType, "eventType cannot be null");
         this.severity  = Objects.requireNonNull(severity,  "severity cannot be null");
         this.filePath  = filePath != null ? filePath.toAbsolutePath().normalize() : null;
         this.details   = Objects.requireNonNull(details, "details cannot be null");
+    }
+
+    private SecurityEvent(EventType eventType, Severity severity, Path filePath, String details) {
+        this(Instant.now(), eventType, severity, filePath, details);
     }
 
     // -------------------------------------------------------------------------
@@ -67,6 +71,23 @@ public final class SecurityEvent {
      */
     public static SecurityEvent of(EventType eventType, Severity severity, String details) {
         return new SecurityEvent(eventType, severity, null, details);
+    }
+
+    /**
+     * Creates a {@code SecurityEvent} with an explicit timestamp and an optional file path.
+     * Suitable for deserializing stored events or testing time-sensitive scenarios.
+     *
+     * @param timestamp the instant at which the event occurred
+     * @param eventType the type of event
+     * @param severity  the severity level
+     * @param filePath  the affected file path, or null
+     * @param details   a human-readable description of the event
+     * @return a new, immutable SecurityEvent
+     * @throws NullPointerException if timestamp, eventType, severity, or details is null
+     */
+    public static SecurityEvent of(Instant timestamp, EventType eventType, Severity severity,
+                                   Path filePath, String details) {
+        return new SecurityEvent(timestamp, eventType, severity, filePath, details);
     }
 
     // -------------------------------------------------------------------------
