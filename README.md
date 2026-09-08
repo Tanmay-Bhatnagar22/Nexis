@@ -2,7 +2,7 @@
 
 **File Integrity & Host Intrusion Detection Monitor**
 
-Nexis is an academic cybersecurity/DFIR (Digital Forensics and Incident Response) project that monitors file system integrity to detect unauthorized modifications, additions, and deletions.
+Nexis is cybersecurity/DFIR (Digital Forensics and Incident Response) project that monitors file system integrity to detect unauthorized modifications, additions, and deletions.
 
 ---
 
