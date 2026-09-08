@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -120,5 +121,83 @@ class SecurityEventTest {
         String s = event.toString();
         assertTrue(s.contains("INTEGRITY_VIOLATION"), "toString should contain event type");
         assertTrue(s.contains("CRITICAL"), "toString should contain severity");
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. Value equality and hashCode
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("10. Equal events compare equal and have identical hash codes")
+    void equalEventsCompareEqualAndHaveMatchingHashCodes() {
+        Instant ts = Instant.parse("2026-09-08T10:00:00Z");
+        Path path = Path.of("audit.log");
+
+        SecurityEvent e1 = SecurityEvent.of(ts, EventType.FILE_CREATED, Severity.INFO, path, "Created");
+        SecurityEvent e2 = SecurityEvent.of(ts, EventType.FILE_CREATED, Severity.INFO, path, "Created");
+
+        assertEquals(e1, e2, "Identical events must be equal");
+        assertEquals(e2, e1, "Equality must be symmetric");
+        assertEquals(e1.hashCode(), e2.hashCode(), "Equal events must have identical hash codes");
+        assertEquals(e1, e1, "Equality must be reflexive");
+    }
+
+    @Test
+    @DisplayName("11. Equal events without path compare equal and have identical hash codes")
+    void equalEventsWithoutPathCompareEqual() {
+        Instant ts = Instant.parse("2026-09-08T10:00:00Z");
+
+        SecurityEvent e1 = SecurityEvent.of(ts, EventType.SYSTEM_ERROR, Severity.ERROR, null, "Failed");
+        SecurityEvent e2 = SecurityEvent.of(ts, EventType.SYSTEM_ERROR, Severity.ERROR, null, "Failed");
+
+        assertEquals(e1, e2);
+        assertEquals(e1.hashCode(), e2.hashCode());
+    }
+
+    @Test
+    @DisplayName("12. Differing fields produce inequality")
+    void differingFieldsProduceInequality() {
+        Instant ts1 = Instant.parse("2026-09-08T10:00:00Z");
+        Instant ts2 = Instant.parse("2026-09-08T10:00:01Z");
+        Path p1 = Path.of("file1.txt");
+        Path p2 = Path.of("file2.txt");
+
+        SecurityEvent base = SecurityEvent.of(ts1, EventType.FILE_CREATED, Severity.INFO, p1, "Details");
+
+        // Differing timestamp
+        SecurityEvent diffTs = SecurityEvent.of(ts2, EventType.FILE_CREATED, Severity.INFO, p1, "Details");
+        assertNotEquals(base, diffTs);
+
+        // Differing eventType
+        SecurityEvent diffType = SecurityEvent.of(ts1, EventType.FILE_MODIFIED, Severity.INFO, p1, "Details");
+        assertNotEquals(base, diffType);
+
+        // Differing severity
+        SecurityEvent diffSev = SecurityEvent.of(ts1, EventType.FILE_CREATED, Severity.WARNING, p1, "Details");
+        assertNotEquals(base, diffSev);
+
+        // Differing path
+        SecurityEvent diffPath = SecurityEvent.of(ts1, EventType.FILE_CREATED, Severity.INFO, p2, "Details");
+        assertNotEquals(base, diffPath);
+
+        // Path vs null path
+        SecurityEvent nullPath = SecurityEvent.of(ts1, EventType.FILE_CREATED, Severity.INFO, null, "Details");
+        assertNotEquals(base, nullPath);
+        assertNotEquals(nullPath, base);
+
+        // Differing details
+        SecurityEvent diffDet = SecurityEvent.of(ts1, EventType.FILE_CREATED, Severity.INFO, p1, "Other details");
+        assertNotEquals(base, diffDet);
+    }
+
+    @Test
+    @DisplayName("13. Comparison with null or different class returns false")
+    void comparisonWithNullOrDifferentClassReturnsFalse() {
+        SecurityEvent event = SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("a.txt"), "Details");
+
+        assertNotEquals(null, event);
+        assertNotEquals(event, null);
+        assertNotEquals("string object", event);
+        assertNotEquals(event, "string object");
     }
 }

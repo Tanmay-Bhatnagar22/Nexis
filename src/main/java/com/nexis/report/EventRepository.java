@@ -251,19 +251,29 @@ public class EventRepository {
     }
 
     /**
-     * Convenience factory that creates an EventRepository and attempts to load
-     * from the default events path. If the file does not exist or fails to load,
-     * an empty repository is returned.
+     * Convenience factory that creates an EventRepository and loads events from
+     * the default events path. If the file does not exist, an empty repository
+     * is returned.
      *
      * @return EventRepository instance
+     * @throws IOException if reading an existing events file fails (e.g. malformed JSON or unsupported schema)
      */
-    public static EventRepository loadOrDefault() {
-        EventRepository repo = new EventRepository();
-        try {
-            repo.load();
-        } catch (IOException ignored) {
-            // Start fresh with empty repository
-        }
+    public static EventRepository loadOrDefault() throws IOException {
+        return loadOrDefault(DEFAULT_EVENTS_PATH);
+    }
+
+    /**
+     * Convenience factory that creates an EventRepository backed by the specified
+     * storage path and loads its events. If the file does not exist, an empty
+     * repository is returned.
+     *
+     * @param storagePath path to the JSON storage file; must not be null
+     * @return EventRepository instance
+     * @throws IOException if reading an existing events file fails (e.g. malformed JSON or unsupported schema)
+     */
+    public static EventRepository loadOrDefault(Path storagePath) throws IOException {
+        EventRepository repo = new EventRepository(storagePath);
+        repo.load();
         return repo;
     }
 }

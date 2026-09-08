@@ -141,6 +141,26 @@ public final class SecurityEvent {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof SecurityEvent that)) {
+            return false;
+        }
+        return Objects.equals(timestamp, that.timestamp)
+            && eventType == that.eventType
+            && severity == that.severity
+            && Objects.equals(filePath, that.filePath)
+            && Objects.equals(details, that.details);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(timestamp, eventType, severity, filePath, details);
+    }
+
+    @Override
     public String toString() {
         return "SecurityEvent{"
             + "type=" + eventType

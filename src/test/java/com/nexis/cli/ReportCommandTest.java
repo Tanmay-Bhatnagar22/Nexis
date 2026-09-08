@@ -194,5 +194,48 @@ class ReportCommandTest {
         assertTrue(out.toString().contains("Security events cleared."));
         assertFalse(Files.exists(defaultEventsPath));
     }
+
+    @Test
+    @DisplayName("9. report with corrupted events file outputs error and exits with code 1")
+    void reportCorruptedEventsFileReportsError() throws IOException {
+        if (defaultEventsPath.getParent() != null) {
+            Files.createDirectories(defaultEventsPath.getParent());
+        }
+        Files.writeString(defaultEventsPath, "{ this is invalid json content: [");
+
+        StringWriter out = new StringWriter();
+        StringWriter err = new StringWriter();
+
+        int exitCode = runReport(out, err);
+
+        assertEquals(1, exitCode);
+        assertTrue(err.toString().contains("Error: Failed to load security events"));
+        assertFalse(out.toString().contains("No security events recorded."));
+    }
+
+    @Test
+    @DisplayName("10. report with unsupported schema version outputs error and exits with code 1")
+    void reportUnsupportedSchemaVersionReportsError() throws IOException {
+        if (defaultEventsPath.getParent() != null) {
+            Files.createDirectories(defaultEventsPath.getParent());
+        }
+        String futureJson = """
+            {
+              "version": 999,
+              "events": []
+            }
+            """;
+        Files.writeString(defaultEventsPath, futureJson);
+
+        StringWriter out = new StringWriter();
+        StringWriter err = new StringWriter();
+
+        int exitCode = runReport(out, err);
+
+        assertEquals(1, exitCode);
+        assertTrue(err.toString().contains("Error: Failed to load security events"));
+        assertTrue(err.toString().contains("Unsupported event storage schema version: 999"));
+        assertFalse(out.toString().contains("No security events recorded."));
+    }
 }
 

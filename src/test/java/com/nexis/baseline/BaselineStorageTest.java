@@ -101,5 +101,83 @@ class BaselineStorageTest {
         assertEquals(Path.of("a.txt"), loaded.get(0).filePath(), "Entries should be sorted by path");
         assertEquals(Path.of("b.txt"), loaded.get(1).filePath());
     }
+
+    @Test
+    @DisplayName("6. Reading baseline with unsupported future schema version throws BaselineStorageException")
+    void readUnsupportedSchemaVersionThrowsBaselineStorageException() throws IOException {
+        Path file = tempDir.resolve("future_baseline.json");
+        String futureJson = """
+            {
+              "version": 999,
+              "entries": []
+            }
+            """;
+        Files.writeString(file, futureJson, StandardCharsets.UTF_8);
+
+        BaselineStorageException ex = assertThrows(
+            BaselineStorageException.class,
+            () -> storage.readBaseline(file)
+        );
+        assertTrue(ex.getMessage().contains("Unsupported baseline storage schema version: 999"));
+    }
+
+    @Test
+    @DisplayName("7. Reading malformed JSON throws BaselineStorageException")
+    void readMalformedJsonThrowsBaselineStorageException() throws IOException {
+        Path file = tempDir.resolve("malformed.json");
+        Files.writeString(file, "{ not valid json: [", StandardCharsets.UTF_8);
+
+        BaselineStorageException ex = assertThrows(
+            BaselineStorageException.class,
+            () -> storage.readBaseline(file)
+        );
+        assertTrue(ex.getMessage().contains("Malformed baseline JSON"));
+    }
+
+    @Test
+    @DisplayName("8. Reading entry with missing or blank filePath throws BaselineStorageException")
+    void readEntryWithMissingFilePathThrowsBaselineStorageException() throws IOException {
+        Path file = tempDir.resolve("missing_path.json");
+        String badJson = """
+            {
+              "version": 1,
+              "entries": [
+                {
+                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                }
+              ]
+            }
+            """;
+        Files.writeString(file, badJson, StandardCharsets.UTF_8);
+
+        BaselineStorageException ex = assertThrows(
+            BaselineStorageException.class,
+            () -> storage.readBaseline(file)
+        );
+        assertTrue(ex.getMessage().contains("Missing or blank 'filePath'"));
+    }
+
+    @Test
+    @DisplayName("9. Reading entry with missing sha256 throws BaselineStorageException")
+    void readEntryWithMissingSha256ThrowsBaselineStorageException() throws IOException {
+        Path file = tempDir.resolve("missing_sha.json");
+        String badJson = """
+            {
+              "version": 1,
+              "entries": [
+                {
+                  "filePath": "test.txt"
+                }
+              ]
+            }
+            """;
+        Files.writeString(file, badJson, StandardCharsets.UTF_8);
+
+        BaselineStorageException ex = assertThrows(
+            BaselineStorageException.class,
+            () -> storage.readBaseline(file)
+        );
+        assertTrue(ex.getMessage().contains("Missing 'sha256'"));
+    }
 }
 

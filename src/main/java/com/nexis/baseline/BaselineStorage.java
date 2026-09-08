@@ -114,7 +114,18 @@ public class BaselineStorage {
             throw new BaselineStorageException("Malformed baseline JSON in file: " + source, e);
         }
 
-        if (document == null || document.entries == null) {
+        if (document == null) {
+            return Collections.emptyList();
+        }
+
+        if (document.version > SCHEMA_VERSION) {
+            throw new BaselineStorageException(
+                "Unsupported baseline storage schema version: " + document.version
+                    + " (maximum supported: " + SCHEMA_VERSION + ")"
+            );
+        }
+
+        if (document.entries == null) {
             return Collections.emptyList();
         }
 

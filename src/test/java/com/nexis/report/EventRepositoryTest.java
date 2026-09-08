@@ -1,15 +1,20 @@
 package com.nexis.report;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
@@ -208,6 +213,95 @@ class EventRepositoryTest {
         assertThrows(NullPointerException.class, () -> repository.findBySeverity(null));
         assertThrows(NullPointerException.class, () -> repository.findByType(null));
         assertThrows(NullPointerException.class, () -> repository.findByPath(null));
+    }
+
+    @Test
+    @DisplayName("12. save and load round-trip preserves event state")
+    void saveAndLoadRoundTrip(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("events.json");
+        EventRepository repo = new EventRepository(file);
+        SecurityEvent event = SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("sample.txt"), "Details");
+        repo.add(event);
+        repo.save();
+
+        EventRepository loadedRepo = new EventRepository(file);
+        loadedRepo.load();
+
+        assertEquals(1, loadedRepo.size());
+        assertEquals(event, loadedRepo.getAll().get(0));
+    }
+
+    @Test
+    @DisplayName("13. Multiple events survive persistence in exact insertion order")
+    void multipleEventsSurvivePersistence(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("events.json");
+        EventRepository repo = new EventRepository(file);
+        SecurityEvent e1 = SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("a.txt"), "A");
+        SecurityEvent e2 = SecurityEvent.of(EventType.FILE_MODIFIED, Severity.WARNING, Path.of("b.txt"), "B");
+        SecurityEvent e3 = SecurityEvent.of(EventType.INTEGRITY_VIOLATION, Severity.CRITICAL, Path.of("c.txt"), "C");
+        repo.addAll(List.of(e1, e2, e3));
+        repo.save();
+
+        EventRepository loadedRepo = new EventRepository(file);
+        loadedRepo.load();
+
+        assertEquals(3, loadedRepo.size());
+        assertEquals(List.of(e1, e2, e3), loadedRepo.getAll());
+    }
+
+    @Test
+    @DisplayName("14. Corrupted or malformed JSON causes explicit IOException and does not load")
+    void corruptedJsonCausesExplicitFailure(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("corrupted_events.json");
+        Files.writeString(file, "{ invalid json format: [[", StandardCharsets.UTF_8);
+
+        EventRepository repo = new EventRepository(file);
+        assertThrows(IOException.class, repo::load);
+        assertThrows(IOException.class, () -> EventRepository.loadOrDefault(file));
+    }
+
+    @Test
+    @DisplayName("15. Unsupported future schema version causes explicit IOException")
+    void unsupportedSchemaVersionCausesExplicitFailure(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("future_events.json");
+        String futureJson = """
+            {
+              "version": 999,
+              "events": []
+            }
+            """;
+        Files.writeString(file, futureJson, StandardCharsets.UTF_8);
+
+        EventRepository repo = new EventRepository(file);
+        IOException ex = assertThrows(IOException.class, repo::load);
+        assertTrue(ex.getMessage().contains("Unsupported event storage schema version: 999"));
+        assertThrows(IOException.class, () -> EventRepository.loadOrDefault(file));
+    }
+
+    @Test
+    @DisplayName("16. Missing events file behaves according to intended design (returns empty repository)")
+    void missingEventsFileReturnsEmptyRepository(@TempDir Path tempDir) throws IOException {
+        Path missing = tempDir.resolve("missing_events.json");
+
+        EventRepository repo = EventRepository.loadOrDefault(missing);
+        assertNotNull(repo);
+        assertTrue(repo.isEmpty());
+        assertEquals(0, repo.size());
+    }
+
+    @Test
+    @DisplayName("17. Failed loading preserves existing file and never overwrites it with empty repository")
+    void failedLoadingPreservesExistingFile(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("precious_corrupted.json");
+        String originalContent = "{ partially corrupted critical incident log: ";
+        Files.writeString(file, originalContent, StandardCharsets.UTF_8);
+
+        // Attempting loadOrDefault must throw, preventing an empty repo from being returned
+        assertThrows(IOException.class, () -> EventRepository.loadOrDefault(file));
+
+        // Ensure file content was not wiped or replaced
+        String remainingContent = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(originalContent, remainingContent);
     }
 }
 

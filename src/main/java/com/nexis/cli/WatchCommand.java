@@ -74,7 +74,13 @@ public class WatchCommand implements Callable<Integer> {
 
         AlertManager alertManager = new AlertManager(out);
         SecurityLogger securityLogger = new SecurityLogger();
-        EventRepository eventRepository = EventRepository.loadOrDefault();
+        EventRepository eventRepository;
+        try {
+            eventRepository = EventRepository.loadOrDefault();
+        } catch (IOException e) {
+            err.println("Error: Failed to load event repository — " + e.getMessage());
+            return 1;
+        }
 
         // try-with-resources guarantees the WatchService is closed on every exit path
         try (DirectoryMonitor monitor = new DirectoryMonitor(directory)) {

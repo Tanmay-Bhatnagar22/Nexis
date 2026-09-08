@@ -95,14 +95,20 @@ public class ScanCommand implements Callable<Integer> {
             // Emit security events for all notable findings
             AlertManager alertManager = new AlertManager(out);
             SecurityLogger securityLogger = new SecurityLogger();
-            EventRepository eventRepository = EventRepository.loadOrDefault();
+            EventRepository eventRepository;
+            try {
+                eventRepository = EventRepository.loadOrDefault();
+            } catch (IOException e) {
+                err.println("Error: Failed to load event repository — " + e.getMessage());
+                return 1;
+            }
 
             emitIntegrityEvents(result, alertManager, securityLogger, eventRepository);
             try {
                 eventRepository.save();
             } catch (IOException e) {
                 // Non-fatal, reporting storage failure must not crash scan
-                System.err.println("[NEXIS] Warning: Failed to save event repository — " + e.getMessage());
+                err.println("[NEXIS] Warning: Failed to save event repository — " + e.getMessage());
             }
 
             return result.isClean() ? 0 : 1;

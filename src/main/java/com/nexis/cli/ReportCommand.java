@@ -95,7 +95,14 @@ public class ReportCommand implements Callable<Integer> {
             }
         }
 
-        EventRepository repository = EventRepository.loadOrDefault();
+        EventRepository repository;
+        try {
+            repository = EventRepository.loadOrDefault();
+        } catch (IOException e) {
+            err.println("Error: Failed to load security events — " + e.getMessage());
+            return 1;
+        }
+
         List<SecurityEvent> matchedEvents = repository.find(severity, eventType, pathFilter);
 
         ReportGenerator generator = new ReportGenerator();
