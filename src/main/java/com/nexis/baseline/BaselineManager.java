@@ -101,7 +101,22 @@ public class BaselineManager {
         if (file == null) {
             throw new IllegalArgumentException("Target file path cannot be null");
         }
-        return Optional.ofNullable(entries.get(file.normalize()));
+        Path normalized = file.normalize();
+        BaselineEntry entry = entries.get(normalized);
+        if (entry != null) {
+            return Optional.of(entry);
+        }
+        Path absolute = normalized.toAbsolutePath().normalize();
+        entry = entries.get(absolute);
+        if (entry != null) {
+            return Optional.of(entry);
+        }
+        for (BaselineEntry e : entries.values()) {
+            if (e.filePath().toAbsolutePath().normalize().equals(absolute)) {
+                return Optional.of(e);
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -115,7 +130,7 @@ public class BaselineManager {
         if (file == null) {
             throw new IllegalArgumentException("Target file path cannot be null");
         }
-        return entries.containsKey(file.normalize());
+        return getEntry(file).isPresent();
     }
 
     /**

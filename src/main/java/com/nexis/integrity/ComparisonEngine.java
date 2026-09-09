@@ -111,18 +111,7 @@ public class ComparisonEngine {
                 continue;
             }
 
-            if (baselineEntry == null) {
-                // File exists on disk, but has no corresponding baseline entry
-                resultEntries.add(new ComparisonEntry(scannedFile, ComparisonStatus.NEW, null, currentHash));
-            } else {
-                // File exists on disk and has a baseline entry
-                String baselineHash = baselineEntry.sha256();
-                if (currentHash.equalsIgnoreCase(baselineHash)) {
-                    resultEntries.add(new ComparisonEntry(scannedFile, ComparisonStatus.UNCHANGED, baselineHash, currentHash));
-                } else {
-                    resultEntries.add(new ComparisonEntry(scannedFile, ComparisonStatus.MODIFIED, baselineHash, currentHash));
-                }
-            }
+            resultEntries.add(compareFile(scannedFile, currentHash, baselineEntry));
         }
 
         // Process baseline entries that were not discovered during scanning
@@ -131,6 +120,10 @@ public class ComparisonEngine {
             BaselineEntry baselineEntry = entry.getValue();
 
             if (!scannedByAbsPath.containsKey(absPath)) {
+                Path pathRecord = baselineEntry.filePath().isAbsolute()
+                    ? baselineEntry.filePath()
+                    : targetDirectory.resolve(baselineEntry.filePath());
+
                 if (Files.exists(absPath) && Files.isRegularFile(absPath)) {
                     String currentHash;
                     try {
@@ -139,25 +132,38 @@ public class ComparisonEngine {
                         errors.put(absPath, e.getMessage());
                         continue;
                     }
-                    String baselineHash = baselineEntry.sha256();
-                    Path pathRecord = baselineEntry.filePath().isAbsolute()
-                        ? baselineEntry.filePath()
-                        : targetDirectory.resolve(baselineEntry.filePath());
-                    if (currentHash.equalsIgnoreCase(baselineHash)) {
-                        resultEntries.add(new ComparisonEntry(pathRecord, ComparisonStatus.UNCHANGED, baselineHash, currentHash));
-                    } else {
-                        resultEntries.add(new ComparisonEntry(pathRecord, ComparisonStatus.MODIFIED, baselineHash, currentHash));
-                    }
+                    resultEntries.add(compareFile(pathRecord, currentHash, baselineEntry));
                 } else {
                     // File no longer exists on disk
-                    Path pathRecord = baselineEntry.filePath().isAbsolute()
-                        ? baselineEntry.filePath()
-                        : targetDirectory.resolve(baselineEntry.filePath());
-                    resultEntries.add(new ComparisonEntry(pathRecord, ComparisonStatus.DELETED, baselineEntry.sha256(), null));
+                    resultEntries.add(compareFile(pathRecord, null, baselineEntry));
                 }
             }
         }
 
         return new ComparisonResult(targetDirectory, resultEntries, errors);
+    }
+
+    /**
+     * Compares a file with a calculated current hash against its baseline entry.
+     *
+     * @param file the file path
+     * @param currentHash current SHA-256 hash, or null if file does not exist or could not be read
+     * @param baselineEntry baseline entry, or null if unbaselined
+     * @return ComparisonEntry representing the comparison status
+     */
+    public ComparisonEntry compareFile(Path file, String currentHash, BaselineEntry baselineEntry) {
+        Objects.requireNonNull(file, "File path cannot be null");
+        if (baselineEntry == null) {
+            return new ComparisonEntry(file, ComparisonStatus.NEW, null, currentHash);
+        }
+        String baselineHash = baselineEntry.sha256();
+        if (currentHash == null) {
+            return new ComparisonEntry(file, ComparisonStatus.DELETED, baselineHash, null);
+        }
+        if (currentHash.equalsIgnoreCase(baselineHash)) {
+            return new ComparisonEntry(file, ComparisonStatus.UNCHANGED, baselineHash, currentHash);
+        } else {
+            return new ComparisonEntry(file, ComparisonStatus.MODIFIED, baselineHash, currentHash);
+        }
     }
 }

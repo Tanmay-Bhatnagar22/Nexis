@@ -11,6 +11,10 @@ import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
 import com.nexis.alert.SecurityLogger;
 import com.nexis.alert.Severity;
+import com.nexis.baseline.BaselineEntry;
+import com.nexis.baseline.BaselineManager;
+import com.nexis.integrity.ComparisonEngine;
+import com.nexis.integrity.ComparisonEntry;
 import com.nexis.integrity.HashCalculator;
 import com.nexis.monitor.DirectoryMonitor;
 import com.nexis.monitor.MonitorEvent;
@@ -48,13 +52,36 @@ public class WatchCommand implements Callable<Integer> {
     @ParentCommand
     private NexisCLI parent;
 
+    private Path baselinePath;
     private Path logPath;
     private Path eventsPath;
+    private BaselineManager baselineManager;
+    private ComparisonEngine comparisonEngine;
 
     public WatchCommand() {
     }
 
     public WatchCommand(Path logPath, Path eventsPath) {
+        this.logPath = logPath;
+        this.eventsPath = eventsPath;
+    }
+
+    public WatchCommand(Path baselinePath, Path logPath, Path eventsPath) {
+        this.baselinePath = baselinePath;
+        this.logPath = logPath;
+        this.eventsPath = eventsPath;
+    }
+
+    public WatchCommand(BaselineManager baselineManager, Path logPath, Path eventsPath) {
+        this.baselineManager = baselineManager;
+        this.logPath = logPath;
+        this.eventsPath = eventsPath;
+    }
+
+    public WatchCommand(BaselineManager baselineManager, ComparisonEngine comparisonEngine,
+                        Path logPath, Path eventsPath) {
+        this.baselineManager = baselineManager;
+        this.comparisonEngine = comparisonEngine;
         this.logPath = logPath;
         this.eventsPath = eventsPath;
     }
@@ -94,6 +121,29 @@ public class WatchCommand implements Callable<Integer> {
             : (parent != null && parent.getEventsPath() != null
                 ? parent.getEventsPath()
                 : EventRepository.DEFAULT_EVENTS_PATH);
+
+        // Pre-load baseline if not already provided
+        if (this.baselineManager == null) {
+            Path effectiveBaselinePath = this.baselinePath != null
+                ? this.baselinePath
+                : (parent != null && parent.getBaselinePath() != null
+                    ? parent.getBaselinePath()
+                    : BaselineManager.DEFAULT_BASELINE_PATH);
+
+            BaselineManager manager = new BaselineManager(effectiveBaselinePath);
+            if (Files.exists(effectiveBaselinePath)) {
+                try {
+                    manager.load();
+                } catch (IOException e) {
+                    err.println("Warning: Failed to load baseline — " + e.getMessage());
+                }
+            }
+            this.baselineManager = manager;
+        }
+
+        if (this.comparisonEngine == null) {
+            this.comparisonEngine = new ComparisonEngine();
+        }
 
         AlertManager alertManager = new AlertManager(out);
         SecurityLogger securityLogger = new SecurityLogger(effectiveLogPath);
@@ -142,7 +192,8 @@ public class WatchCommand implements Callable<Integer> {
      * <p>Event mappings:
      * <ul>
      *   <li>CREATED  → FILE_CREATED / INFO</li>
-     *   <li>MODIFIED → FILE_MODIFIED / WARNING</li>
+     *   <li>MODIFIED → INTEGRITY_VIOLATION / CRITICAL if hash differs from baseline,
+     *                  FILE_MODIFIED / WARNING if hash is unchanged or unbaselined</li>
      *   <li>DELETED  → FILE_DELETED / WARNING</li>
      * </ul>
      *
@@ -150,11 +201,12 @@ public class WatchCommand implements Callable<Integer> {
      * @param alertManager   alert display component
      * @param securityLogger persistent logging component
      * @param eventRepository event repository for reporting
+     * @return the dispatched SecurityEvent
      */
-    private void dispatchEvent(MonitorEvent event,
-                               AlertManager alertManager,
-                               SecurityLogger securityLogger,
-                               EventRepository eventRepository) {
+    public SecurityEvent dispatchEvent(MonitorEvent event,
+                                       AlertManager alertManager,
+                                       SecurityLogger securityLogger,
+                                       EventRepository eventRepository) {
         Path file = event.filePath();
 
         try {
@@ -167,9 +219,28 @@ public class WatchCommand implements Callable<Integer> {
                     yield SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, file, details);
                 }
                 case MODIFIED -> {
-                    String hash = tryHash(file);
-                    String details = hash != null
-                        ? "File modification detected. SHA-256: " + hash
+                    String currentHash = tryHash(file);
+                    BaselineManager bm = getBaselineManager();
+                    ComparisonEngine ce = getComparisonEngine();
+
+                    if (currentHash != null && bm != null) {
+                        BaselineEntry baselineEntry = bm.getEntry(file).orElse(null);
+                        if (baselineEntry != null) {
+                            ComparisonEntry comparison = ce.compareFile(file, currentHash, baselineEntry);
+                            if (comparison.isModified()) {
+                                String details = "SHA-256 hash differs from baseline — possible tampering detected."
+                                    + comparison.getBaselineHash().map(h -> " Expected: " + h).orElse("")
+                                    + comparison.getCurrentHash().map(h -> " Found: " + h).orElse("");
+                                yield SecurityEvent.of(EventType.INTEGRITY_VIOLATION, Severity.CRITICAL, file, details);
+                            } else if (comparison.isUnchanged()) {
+                                yield SecurityEvent.of(EventType.FILE_MODIFIED, Severity.WARNING, file,
+                                    "File modification detected (hash unchanged). SHA-256: " + currentHash);
+                            }
+                        }
+                    }
+
+                    String details = currentHash != null
+                        ? "File modification detected. SHA-256: " + currentHash
                         : "File modification detected.";
                     yield SecurityEvent.of(EventType.FILE_MODIFIED, Severity.WARNING, file, details);
                 }
@@ -189,6 +260,8 @@ public class WatchCommand implements Callable<Integer> {
             } catch (IOException ignored) {
             }
 
+            return secEvent;
+
         } catch (Exception e) {
             // Unexpected error in event dispatch — report as MONITORING_ERROR, never crash the loop
             SecurityEvent errEvent = SecurityEvent.of(
@@ -203,7 +276,36 @@ public class WatchCommand implements Callable<Integer> {
                 eventRepository.save();
             } catch (IOException ignored) {
             }
+            return errEvent;
         }
+    }
+
+    private BaselineManager getBaselineManager() {
+        if (this.baselineManager != null) {
+            return this.baselineManager;
+        }
+        Path effectiveBaselinePath = this.baselinePath != null
+            ? this.baselinePath
+            : (parent != null && parent.getBaselinePath() != null
+                ? parent.getBaselinePath()
+                : BaselineManager.DEFAULT_BASELINE_PATH);
+
+        BaselineManager manager = new BaselineManager(effectiveBaselinePath);
+        if (Files.exists(effectiveBaselinePath)) {
+            try {
+                manager.load();
+            } catch (IOException ignored) {
+            }
+        }
+        this.baselineManager = manager;
+        return this.baselineManager;
+    }
+
+    private ComparisonEngine getComparisonEngine() {
+        if (this.comparisonEngine == null) {
+            this.comparisonEngine = new ComparisonEngine();
+        }
+        return this.comparisonEngine;
     }
 
     /**
