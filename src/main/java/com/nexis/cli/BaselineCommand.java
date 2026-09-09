@@ -30,6 +30,15 @@ public class BaselineCommand implements Callable<Integer> {
     @ParentCommand
     private NexisCLI parent;
 
+    private Path baselinePath;
+
+    public BaselineCommand() {
+    }
+
+    public BaselineCommand(Path baselinePath) {
+        this.baselinePath = baselinePath;
+    }
+
     @Override
     public Integer call() {
         PrintWriter out = parent != null && parent.getOut() != null
@@ -54,11 +63,17 @@ public class BaselineCommand implements Callable<Integer> {
             return 1;
         }
 
+        Path effectiveBaselinePath = this.baselinePath != null
+            ? this.baselinePath
+            : (parent != null && parent.getBaselinePath() != null
+                ? parent.getBaselinePath()
+                : BaselineManager.DEFAULT_BASELINE_PATH);
+
         try {
             FileScanner scanner = new FileScanner();
             List<Path> files = scanner.scan(directory);
 
-            BaselineManager manager = new BaselineManager();
+            BaselineManager manager = new BaselineManager(effectiveBaselinePath);
             manager.addOrUpdateFiles(files);
             manager.save();
 

@@ -7,38 +7,35 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
 import com.nexis.alert.Severity;
-import com.nexis.report.EventRepository;
 import com.nexis.report.EventStorage;
 
 import picocli.CommandLine;
 
 class ReportCommandTest {
 
-    private final Path defaultEventsPath = EventRepository.DEFAULT_EVENTS_PATH;
+    @TempDir
+    Path tempDir;
+
+    private Path eventsPath;
 
     @BeforeEach
-    void setUp() throws IOException {
-        Files.deleteIfExists(defaultEventsPath);
-    }
-
-    @AfterEach
-    void tearDown() throws IOException {
-        Files.deleteIfExists(defaultEventsPath);
+    void setUp() {
+        eventsPath = tempDir.resolve("events.json");
     }
 
     private int runReport(StringWriter out, StringWriter err, String... args) {
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(null, null, eventsPath);
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -66,7 +63,7 @@ class ReportCommandTest {
     @DisplayName("2. report with stored events returns exit code 0 and full summary")
     void reportWithEvents() throws IOException {
         EventStorage storage = new EventStorage();
-        storage.writeEvents(defaultEventsPath, List.of(
+        storage.writeEvents(eventsPath, List.of(
             SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("created.txt"), "New file"),
             SecurityEvent.of(EventType.INTEGRITY_VIOLATION, Severity.CRITICAL, Path.of("tampered.txt"), "Tampered")
         ));
@@ -89,7 +86,7 @@ class ReportCommandTest {
     @DisplayName("3. report --severity filters events by severity")
     void reportFilterBySeverity() throws IOException {
         EventStorage storage = new EventStorage();
-        storage.writeEvents(defaultEventsPath, List.of(
+        storage.writeEvents(eventsPath, List.of(
             SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("info.txt"), "Info"),
             SecurityEvent.of(EventType.INTEGRITY_VIOLATION, Severity.CRITICAL, Path.of("crit.txt"), "Critical")
         ));
@@ -111,7 +108,7 @@ class ReportCommandTest {
     @DisplayName("4. report --type filters events by event type")
     void reportFilterByType() throws IOException {
         EventStorage storage = new EventStorage();
-        storage.writeEvents(defaultEventsPath, List.of(
+        storage.writeEvents(eventsPath, List.of(
             SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("created.txt"), "Created"),
             SecurityEvent.of(EventType.FILE_MODIFIED, Severity.WARNING, Path.of("modified.txt"), "Modified")
         ));
@@ -135,7 +132,7 @@ class ReportCommandTest {
         Path other = Path.of("other.txt").toAbsolutePath().normalize();
 
         EventStorage storage = new EventStorage();
-        storage.writeEvents(defaultEventsPath, List.of(
+        storage.writeEvents(eventsPath, List.of(
             SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, target, "Created target"),
             SecurityEvent.of(EventType.FILE_MODIFIED, Severity.WARNING, other, "Modified other")
         ));
@@ -180,10 +177,10 @@ class ReportCommandTest {
     @DisplayName("8. report --clear clears stored events and returns exit code 0")
     void reportClearEvents() throws IOException {
         EventStorage storage = new EventStorage();
-        storage.writeEvents(defaultEventsPath, List.of(
+        storage.writeEvents(eventsPath, List.of(
             SecurityEvent.of(EventType.FILE_CREATED, Severity.INFO, Path.of("f.txt"), "F")
         ));
-        assertTrue(Files.exists(defaultEventsPath));
+        assertTrue(Files.exists(eventsPath));
 
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
@@ -192,16 +189,16 @@ class ReportCommandTest {
 
         assertEquals(0, exitCode);
         assertTrue(out.toString().contains("Security events cleared."));
-        assertFalse(Files.exists(defaultEventsPath));
+        assertFalse(Files.exists(eventsPath));
     }
 
     @Test
     @DisplayName("9. report with corrupted events file outputs error and exits with code 1")
     void reportCorruptedEventsFileReportsError() throws IOException {
-        if (defaultEventsPath.getParent() != null) {
-            Files.createDirectories(defaultEventsPath.getParent());
+        if (eventsPath.getParent() != null) {
+            Files.createDirectories(eventsPath.getParent());
         }
-        Files.writeString(defaultEventsPath, "{ this is invalid json content: [");
+        Files.writeString(eventsPath, "{ this is invalid json content: [");
 
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
@@ -216,8 +213,8 @@ class ReportCommandTest {
     @Test
     @DisplayName("10. report with unsupported schema version outputs error and exits with code 1")
     void reportUnsupportedSchemaVersionReportsError() throws IOException {
-        if (defaultEventsPath.getParent() != null) {
-            Files.createDirectories(defaultEventsPath.getParent());
+        if (eventsPath.getParent() != null) {
+            Files.createDirectories(eventsPath.getParent());
         }
         String futureJson = """
             {
@@ -225,7 +222,7 @@ class ReportCommandTest {
               "events": []
             }
             """;
-        Files.writeString(defaultEventsPath, futureJson);
+        Files.writeString(eventsPath, futureJson);
 
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();

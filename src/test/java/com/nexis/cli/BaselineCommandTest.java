@@ -23,23 +23,27 @@ class BaselineCommandTest {
     @Test
     @DisplayName("1. Baseline command creates baseline JSON file with correct entry count")
     void baselineCommandCreatesBaselineFile() throws IOException {
-        Files.writeString(tempDir.resolve("alpha.txt"), "Alpha content", StandardCharsets.UTF_8);
-        Files.writeString(tempDir.resolve("beta.txt"), "Beta content", StandardCharsets.UTF_8);
+        Path targetDir = Files.createDirectory(tempDir.resolve("target"));
+        Files.writeString(targetDir.resolve("alpha.txt"), "Alpha content", StandardCharsets.UTF_8);
+        Files.writeString(targetDir.resolve("beta.txt"), "Beta content", StandardCharsets.UTF_8);
 
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        Path workspaceDir = tempDir.resolve("workspace");
+        NexisCLI app = new NexisCLI(workspaceDir);
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
 
-        int exitCode = cmd.execute("baseline", tempDir.toAbsolutePath().toString());
+        int exitCode = cmd.execute("baseline", targetDir.toAbsolutePath().toString());
 
         assertEquals(0, exitCode, "Baseline command should succeed");
         String output = out.toString();
         assertTrue(output.contains("NEXIS BASELINE CREATED"), "Should display success header");
         assertTrue(output.contains("2"), "Should report 2 files");
+        assertTrue(Files.exists(workspaceDir.resolve("data").resolve("baseline.json")),
+            "Baseline file should be created in isolated temporary workspace");
     }
 
     @Test
@@ -50,7 +54,7 @@ class BaselineCommandTest {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(tempDir.resolve("workspace"));
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -69,7 +73,7 @@ class BaselineCommandTest {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(tempDir.resolve("workspace"));
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -82,18 +86,23 @@ class BaselineCommandTest {
 
     @Test
     @DisplayName("4. Baseline command handles empty directory")
-    void baselineCommandHandlesEmptyDirectory() {
+    void baselineCommandHandlesEmptyDirectory() throws IOException {
+        Path emptyDir = Files.createDirectory(tempDir.resolve("empty"));
+
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        Path workspaceDir = tempDir.resolve("workspace");
+        NexisCLI app = new NexisCLI(workspaceDir);
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
 
-        int exitCode = cmd.execute("baseline", tempDir.toAbsolutePath().toString());
+        int exitCode = cmd.execute("baseline", emptyDir.toAbsolutePath().toString());
 
         assertEquals(0, exitCode, "Baseline command should succeed for empty directory");
         assertTrue(out.toString().contains("0"), "Should report 0 files");
+        assertTrue(Files.exists(workspaceDir.resolve("data").resolve("baseline.json")),
+            "Baseline file should be created in isolated temporary workspace");
     }
 }

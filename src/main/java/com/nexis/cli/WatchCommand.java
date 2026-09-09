@@ -11,10 +11,10 @@ import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
 import com.nexis.alert.SecurityLogger;
 import com.nexis.alert.Severity;
-import com.nexis.report.EventRepository;
 import com.nexis.integrity.HashCalculator;
 import com.nexis.monitor.DirectoryMonitor;
 import com.nexis.monitor.MonitorEvent;
+import com.nexis.report.EventRepository;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
@@ -48,6 +48,17 @@ public class WatchCommand implements Callable<Integer> {
     @ParentCommand
     private NexisCLI parent;
 
+    private Path logPath;
+    private Path eventsPath;
+
+    public WatchCommand() {
+    }
+
+    public WatchCommand(Path logPath, Path eventsPath) {
+        this.logPath = logPath;
+        this.eventsPath = eventsPath;
+    }
+
     @Override
     public Integer call() {
         PrintWriter out = parent != null && parent.getOut() != null
@@ -72,11 +83,23 @@ public class WatchCommand implements Callable<Integer> {
             return 1;
         }
 
+        Path effectiveLogPath = this.logPath != null
+            ? this.logPath
+            : (parent != null && parent.getLogPath() != null
+                ? parent.getLogPath()
+                : SecurityLogger.DEFAULT_LOG_PATH);
+
+        Path effectiveEventsPath = this.eventsPath != null
+            ? this.eventsPath
+            : (parent != null && parent.getEventsPath() != null
+                ? parent.getEventsPath()
+                : EventRepository.DEFAULT_EVENTS_PATH);
+
         AlertManager alertManager = new AlertManager(out);
-        SecurityLogger securityLogger = new SecurityLogger();
+        SecurityLogger securityLogger = new SecurityLogger(effectiveLogPath);
         EventRepository eventRepository;
         try {
-            eventRepository = EventRepository.loadOrDefault();
+            eventRepository = EventRepository.loadOrDefault(effectiveEventsPath);
         } catch (IOException e) {
             err.println("Error: Failed to load event repository — " + e.getMessage());
             return 1;
@@ -98,7 +121,7 @@ public class WatchCommand implements Callable<Integer> {
             }));
 
             out.println("[WATCH] Monitoring: " + directory);
-            out.println("[WATCH] Alerts and events are logged to: " + SecurityLogger.DEFAULT_LOG_PATH.toAbsolutePath().normalize());
+            out.println("[WATCH] Alerts and events are logged to: " + securityLogger.getLogPath().toAbsolutePath().normalize());
             out.flush();
 
             // Blocks until stop() is called (e.g. via Ctrl+C shutdown hook)

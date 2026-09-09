@@ -52,6 +52,15 @@ public class ReportCommand implements Callable<Integer> {
     @ParentCommand
     private NexisCLI parent;
 
+    private Path eventsPath;
+
+    public ReportCommand() {
+    }
+
+    public ReportCommand(Path eventsPath) {
+        this.eventsPath = eventsPath;
+    }
+
     @Override
     public Integer call() {
         PrintWriter out = parent != null && parent.getOut() != null
@@ -61,9 +70,15 @@ public class ReportCommand implements Callable<Integer> {
             ? parent.getErr()
             : new PrintWriter(System.err, true);
 
+        Path effectiveEventsPath = this.eventsPath != null
+            ? this.eventsPath
+            : (parent != null && parent.getEventsPath() != null
+                ? parent.getEventsPath()
+                : EventRepository.DEFAULT_EVENTS_PATH);
+
         if (clear) {
             try {
-                Files.deleteIfExists(EventRepository.DEFAULT_EVENTS_PATH);
+                Files.deleteIfExists(effectiveEventsPath);
                 out.println("Security events cleared.");
                 out.flush();
                 return 0;
@@ -97,7 +112,7 @@ public class ReportCommand implements Callable<Integer> {
 
         EventRepository repository;
         try {
-            repository = EventRepository.loadOrDefault();
+            repository = EventRepository.loadOrDefault(effectiveEventsPath);
         } catch (IOException e) {
             err.println("Error: Failed to load security events — " + e.getMessage());
             return 1;

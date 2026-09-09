@@ -25,28 +25,33 @@ class ScanCommandTest {
     Path tempDir;
 
     private Path monitoredDir;
+    private Path workspaceDir;
+    private Path baselineFile;
+    private Path logFile;
+    private Path eventsFile;
 
     @BeforeEach
     void setUp() throws IOException {
         monitoredDir = Files.createDirectory(tempDir.resolve("monitored"));
+        workspaceDir = Files.createDirectory(tempDir.resolve("workspace"));
+        baselineFile = workspaceDir.resolve("data").resolve("baseline.json");
+        logFile = workspaceDir.resolve("logs").resolve("nexis.log");
+        eventsFile = workspaceDir.resolve("data").resolve("events.json");
     }
 
     /**
-     * Creates a baseline for the monitored directory by scanning and saving
-     * to the standard default location (data/baseline.json relative to CWD).
-     * Since tests run from the project root, we need to save to a known location
-     * that the default BaselineManager will find.
+     * Creates a baseline for the monitored directory in the isolated temporary workspace.
      */
     private void createBaseline() throws IOException {
         FileScanner scanner = new FileScanner();
         var files = scanner.scan(monitoredDir);
-        BaselineManager manager = new BaselineManager();
+        BaselineManager manager = new BaselineManager(baselineFile);
         manager.addOrUpdateFiles(files);
         manager.save();
     }
 
     private int runScan(StringWriter out, StringWriter err) {
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(baselineFile, logFile, eventsFile);
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -167,9 +172,7 @@ class ScanCommandTest {
     @Test
     @DisplayName("6. Scan without existing baseline reports error")
     void scanWithoutBaselineReportsError() throws IOException {
-        // Delete the baseline if it exists from a previous test
-        Path defaultBaseline = Path.of("data", "baseline.json");
-        Files.deleteIfExists(defaultBaseline);
+        Files.deleteIfExists(baselineFile);
 
         Files.writeString(monitoredDir.resolve("file.txt"), "Content", StandardCharsets.UTF_8);
 
@@ -190,7 +193,7 @@ class ScanCommandTest {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(baselineFile, logFile, eventsFile);
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -209,7 +212,7 @@ class ScanCommandTest {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(baselineFile, logFile, eventsFile);
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));

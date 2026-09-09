@@ -31,7 +31,7 @@ class WatchCommandTest {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(tempDir.resolve("workspace"));
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));
@@ -51,7 +51,7 @@ class WatchCommandTest {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
 
-        NexisCLI app = new NexisCLI();
+        NexisCLI app = new NexisCLI(tempDir.resolve("workspace"));
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new PrintWriter(out));
         cmd.setErr(new PrintWriter(err));

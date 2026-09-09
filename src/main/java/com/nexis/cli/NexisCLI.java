@@ -1,6 +1,7 @@
 package com.nexis.cli;
 
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
@@ -19,6 +20,40 @@ public class NexisCLI implements Callable<Integer> {
 
     @Spec
     private CommandSpec spec;
+
+    private final Path baselinePath;
+    private final Path logPath;
+    private final Path eventsPath;
+
+    public NexisCLI() {
+        this(null, null, null);
+    }
+
+    public NexisCLI(Path workspaceDir) {
+        this(
+            workspaceDir != null ? workspaceDir.resolve("data").resolve("baseline.json") : null,
+            workspaceDir != null ? workspaceDir.resolve("logs").resolve("nexis.log") : null,
+            workspaceDir != null ? workspaceDir.resolve("data").resolve("events.json") : null
+        );
+    }
+
+    public NexisCLI(Path baselinePath, Path logPath, Path eventsPath) {
+        this.baselinePath = baselinePath;
+        this.logPath = logPath;
+        this.eventsPath = eventsPath;
+    }
+
+    public Path getBaselinePath() {
+        return baselinePath;
+    }
+
+    public Path getLogPath() {
+        return logPath;
+    }
+
+    public Path getEventsPath() {
+        return eventsPath;
+    }
 
     @Override
     public Integer call() {

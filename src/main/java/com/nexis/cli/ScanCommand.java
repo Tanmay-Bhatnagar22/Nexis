@@ -12,12 +12,12 @@ import com.nexis.alert.EventType;
 import com.nexis.alert.SecurityEvent;
 import com.nexis.alert.SecurityLogger;
 import com.nexis.alert.Severity;
-import com.nexis.report.EventRepository;
 import com.nexis.baseline.BaselineManager;
 import com.nexis.baseline.BaselineStorageException;
 import com.nexis.integrity.ComparisonEngine;
 import com.nexis.integrity.ComparisonEntry;
 import com.nexis.integrity.ComparisonResult;
+import com.nexis.report.EventRepository;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
@@ -49,6 +49,19 @@ public class ScanCommand implements Callable<Integer> {
     @ParentCommand
     private NexisCLI parent;
 
+    private Path baselinePath;
+    private Path logPath;
+    private Path eventsPath;
+
+    public ScanCommand() {
+    }
+
+    public ScanCommand(Path baselinePath, Path logPath, Path eventsPath) {
+        this.baselinePath = baselinePath;
+        this.logPath = logPath;
+        this.eventsPath = eventsPath;
+    }
+
     @Override
     public Integer call() {
         PrintWriter out = parent != null && parent.getOut() != null
@@ -73,7 +86,25 @@ public class ScanCommand implements Callable<Integer> {
             return 1;
         }
 
-        BaselineManager manager = new BaselineManager();
+        Path effectiveBaselinePath = this.baselinePath != null
+            ? this.baselinePath
+            : (parent != null && parent.getBaselinePath() != null
+                ? parent.getBaselinePath()
+                : BaselineManager.DEFAULT_BASELINE_PATH);
+
+        Path effectiveLogPath = this.logPath != null
+            ? this.logPath
+            : (parent != null && parent.getLogPath() != null
+                ? parent.getLogPath()
+                : SecurityLogger.DEFAULT_LOG_PATH);
+
+        Path effectiveEventsPath = this.eventsPath != null
+            ? this.eventsPath
+            : (parent != null && parent.getEventsPath() != null
+                ? parent.getEventsPath()
+                : EventRepository.DEFAULT_EVENTS_PATH);
+
+        BaselineManager manager = new BaselineManager(effectiveBaselinePath);
         try {
             manager.load();
         } catch (BaselineStorageException e) {
@@ -94,10 +125,10 @@ public class ScanCommand implements Callable<Integer> {
 
             // Emit security events for all notable findings
             AlertManager alertManager = new AlertManager(out);
-            SecurityLogger securityLogger = new SecurityLogger();
+            SecurityLogger securityLogger = new SecurityLogger(effectiveLogPath);
             EventRepository eventRepository;
             try {
-                eventRepository = EventRepository.loadOrDefault();
+                eventRepository = EventRepository.loadOrDefault(effectiveEventsPath);
             } catch (IOException e) {
                 err.println("Error: Failed to load event repository — " + e.getMessage());
                 return 1;
