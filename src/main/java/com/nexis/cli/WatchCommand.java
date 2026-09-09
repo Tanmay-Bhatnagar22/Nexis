@@ -98,15 +98,15 @@ public class WatchCommand implements Callable<Integer> {
         directory = directory.toAbsolutePath().normalize();
 
         if (!Files.exists(directory)) {
-            err.println("Error: Directory does not exist: " + directory);
+            err.println(CliUI.error("Error: Directory does not exist: " + directory));
             return 1;
         }
         if (!Files.isDirectory(directory)) {
-            err.println("Error: Path is not a directory: " + directory);
+            err.println(CliUI.error("Error: Path is not a directory: " + directory));
             return 1;
         }
         if (!Files.isReadable(directory)) {
-            err.println("Error: Directory is not accessible: " + directory);
+            err.println(CliUI.error("Error: Directory is not accessible: " + directory));
             return 1;
         }
 
@@ -135,7 +135,7 @@ public class WatchCommand implements Callable<Integer> {
                 try {
                     manager.load();
                 } catch (IOException e) {
-                    err.println("Warning: Failed to load baseline — " + e.getMessage());
+                    err.println(CliUI.warning("Warning: Failed to load baseline — " + e.getMessage()));
                 }
             }
             this.baselineManager = manager;
@@ -151,7 +151,7 @@ public class WatchCommand implements Callable<Integer> {
         try {
             eventRepository = EventRepository.loadOrDefault(effectiveEventsPath);
         } catch (IOException e) {
-            err.println("Error: Failed to load event repository — " + e.getMessage());
+            err.println(CliUI.error("Error: Failed to load event repository — " + e.getMessage()));
             return 1;
         }
 
@@ -166,19 +166,19 @@ public class WatchCommand implements Callable<Integer> {
                 } catch (IOException ignored) {
                 }
                 out.println();
-                out.println("[WATCH] Stopped.");
+                out.println(CliUI.info("[WATCH] Monitoring stopped."));
                 out.flush();
             }));
 
-            out.println("[WATCH] Monitoring: " + directory);
-            out.println("[WATCH] Alerts and events are logged to: " + securityLogger.getLogPath().toAbsolutePath().normalize());
+            out.println(CliUI.info("Monitoring started... Monitoring: " + directory));
+            out.println("  Alerts and events are logged to: " + securityLogger.getLogPath().toAbsolutePath().normalize());
             out.flush();
 
             // Blocks until stop() is called (e.g. via Ctrl+C shutdown hook)
             monitor.start(event -> dispatchEvent(event, alertManager, securityLogger, eventRepository));
 
         } catch (IOException e) {
-            err.println("Error: Failed to initialize file watcher — " + e.getMessage());
+            err.println(CliUI.error("Error: Failed to initialize file watcher — " + e.getMessage()));
             return 1;
         }
 

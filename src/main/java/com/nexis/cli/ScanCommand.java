@@ -74,15 +74,15 @@ public class ScanCommand implements Callable<Integer> {
         directory = directory.toAbsolutePath().normalize();
 
         if (!Files.exists(directory)) {
-            err.println("Error: Directory does not exist: " + directory);
+            err.println(CliUI.error("Error: Directory does not exist: " + directory));
             return 1;
         }
         if (!Files.isDirectory(directory)) {
-            err.println("Error: Path is not a directory: " + directory);
+            err.println(CliUI.error("Error: Path is not a directory: " + directory));
             return 1;
         }
         if (!Files.isReadable(directory)) {
-            err.println("Error: Directory is not accessible: " + directory);
+            err.println(CliUI.error("Error: Directory is not accessible: " + directory));
             return 1;
         }
 
@@ -108,11 +108,11 @@ public class ScanCommand implements Callable<Integer> {
         try {
             manager.load();
         } catch (BaselineStorageException e) {
-            err.println("Error: No baseline found. Run 'nexis baseline <directory>' first.");
+            err.println(CliUI.error("Unable to read baseline. Error: No baseline found. Run 'nexis baseline <directory>' first."));
             err.println("  Detail: " + e.getMessage());
             return 1;
         } catch (IOException e) {
-            err.println("Error: Failed to load baseline — " + e.getMessage());
+            err.println(CliUI.error("Unable to read baseline. Error: Failed to load baseline — " + e.getMessage()));
             return 1;
         }
 
@@ -130,7 +130,7 @@ public class ScanCommand implements Callable<Integer> {
             try {
                 eventRepository = EventRepository.loadOrDefault(effectiveEventsPath);
             } catch (IOException e) {
-                err.println("Error: Failed to load event repository — " + e.getMessage());
+                err.println(CliUI.error("Error: Failed to load event repository — " + e.getMessage()));
                 return 1;
             }
 
@@ -139,13 +139,13 @@ public class ScanCommand implements Callable<Integer> {
                 eventRepository.save();
             } catch (IOException e) {
                 // Non-fatal, reporting storage failure must not crash scan
-                err.println("[NEXIS] Warning: Failed to save event repository — " + e.getMessage());
+                err.println(CliUI.warning("[NEXIS] Warning: Failed to save event repository — " + e.getMessage()));
             }
 
             return result.isClean() ? 0 : 1;
 
         } catch (IOException e) {
-            err.println("Error: Scan failed — " + e.getMessage());
+            err.println(CliUI.error("Error: Scan failed — " + e.getMessage()));
             return 1;
         }
     }

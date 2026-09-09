@@ -7,19 +7,43 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
 
 @Command(
     name = "nexis",
     version = "1.0.0",
-    description = "File Integrity & Host Monitor",
-    mixinStandardHelpOptions = true,
-    subcommands = { BaselineCommand.class, ScanCommand.class, WatchCommand.class, ReportCommand.class }
+    header = "Nexis - File Integrity & Host Security Monitor",
+    synopsisHeading = "%nUsage:%n",
+    customSynopsis = { "  nexis <command> [options]", "" },
+    descriptionHeading = "",
+    description = {},
+    commandListHeading = "%nCommands:%n%n",
+    footerHeading = "%nAlso show:%n%n",
+    footer = {
+        "  nexis --help",
+        "  nexis --version"
+    },
+    subcommands = {
+        BaselineCommand.class,
+        ScanCommand.class,
+        WatchCommand.class,
+        ReportCommand.class,
+        NexisCLI.HelpSubcommand.class
+    }
 )
 public class NexisCLI implements Callable<Integer> {
 
     @Spec
     private CommandSpec spec;
+
+    @Option(names = {"-h", "--help"}, usageHelp = true, hidden = true, description = "Show this help message and exit.")
+    private boolean helpRequested;
+
+    @Option(names = {"-V", "--version"}, versionHelp = true, hidden = true, description = "Print version information and exit.")
+    private boolean versionRequested;
 
     private final Path baselinePath;
     private final Path logPath;
@@ -55,9 +79,14 @@ public class NexisCLI implements Callable<Integer> {
         return eventsPath;
     }
 
+    public CommandSpec getSpec() {
+        return spec;
+    }
+
     @Override
     public Integer call() {
-        CommandLine.usage(this, System.out);
+        PrintWriter out = getOut() != null ? getOut() : new PrintWriter(System.out, true);
+        CliUI.printStartupScreen(out);
         return 0;
     }
 
@@ -77,6 +106,45 @@ public class NexisCLI implements Callable<Integer> {
      */
     public PrintWriter getErr() {
         return spec != null ? spec.commandLine().getErr() : null;
+    }
+
+    @Command(
+        name = "help",
+        description = "Display help information about nexis",
+        hidden = true
+    )
+    public static class HelpSubcommand implements Callable<Integer> {
+
+        @ParentCommand
+        private NexisCLI parent;
+
+        @Parameters(index = "0", arity = "0..1", description = "Command to show help for", defaultValue = "")
+        private String subcommand = "";
+
+        @Override
+        public Integer call() {
+            PrintWriter out = parent != null && parent.getOut() != null
+                ? parent.getOut()
+                : new PrintWriter(System.out, true);
+
+            if (subcommand != null && !subcommand.isBlank() && parent != null && parent.getSpec() != null) {
+                CommandLine root = parent.getSpec().commandLine();
+                CommandLine sub = root.getSubcommands().get(subcommand);
+                if (sub != null) {
+                    sub.usage(out);
+                    return 0;
+                } else {
+                    PrintWriter err = parent.getErr() != null
+                        ? parent.getErr()
+                        : new PrintWriter(System.err, true);
+                    err.println(CliUI.error("Error: Unknown command '" + subcommand + "'. Type 'nexis help' to see available commands."));
+                    return 1;
+                }
+            }
+
+            CliUI.printHelp(out);
+            return 0;
+        }
     }
 
     public static void main(String[] args) {

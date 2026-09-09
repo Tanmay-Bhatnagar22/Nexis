@@ -70,9 +70,9 @@ public final class ResultFormatter {
 
         out.println();
         if (result.isClean()) {
-            out.println("  Status: CLEAN — All files match baseline.");
+            out.println("  " + CliUI.success("Scan completed. Status: CLEAN — All files match baseline."));
         } else {
-            out.println("  Status: DIFFERENCES DETECTED — Integrity violations found.");
+            out.println("  " + CliUI.warning("Integrity violation detected. Status: DIFFERENCES DETECTED — Integrity violations found."));
         }
         out.println();
         out.flush();

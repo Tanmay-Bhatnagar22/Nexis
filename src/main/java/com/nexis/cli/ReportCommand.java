@@ -79,11 +79,11 @@ public class ReportCommand implements Callable<Integer> {
         if (clear) {
             try {
                 Files.deleteIfExists(effectiveEventsPath);
-                out.println("Security events cleared.");
+                out.println(CliUI.success("Security events cleared."));
                 out.flush();
                 return 0;
             } catch (IOException e) {
-                err.println("Error: Failed to clear events — " + e.getMessage());
+                err.println(CliUI.error("Error: Failed to clear events — " + e.getMessage()));
                 return 1;
             }
         }
@@ -93,8 +93,8 @@ public class ReportCommand implements Callable<Integer> {
             try {
                 severity = Severity.valueOf(severityStr.toUpperCase().trim());
             } catch (IllegalArgumentException e) {
-                err.println("Error: Invalid severity '" + severityStr + "'. Allowed values: "
-                    + Arrays.toString(Severity.values()));
+                err.println(CliUI.error("Error: Invalid severity '" + severityStr + "'. Allowed values: "
+                    + Arrays.toString(Severity.values())));
                 return 1;
             }
         }
@@ -104,8 +104,8 @@ public class ReportCommand implements Callable<Integer> {
             try {
                 eventType = EventType.valueOf(typeStr.toUpperCase().trim());
             } catch (IllegalArgumentException e) {
-                err.println("Error: Invalid event type '" + typeStr + "'. Allowed values: "
-                    + Arrays.toString(EventType.values()));
+                err.println(CliUI.error("Error: Invalid event type '" + typeStr + "'. Allowed values: "
+                    + Arrays.toString(EventType.values())));
                 return 1;
             }
         }
@@ -114,7 +114,7 @@ public class ReportCommand implements Callable<Integer> {
         try {
             repository = EventRepository.loadOrDefault(effectiveEventsPath);
         } catch (IOException e) {
-            err.println("Error: Failed to load security events — " + e.getMessage());
+            err.println(CliUI.error("Error: Failed to load security events — " + e.getMessage()));
             return 1;
         }
 

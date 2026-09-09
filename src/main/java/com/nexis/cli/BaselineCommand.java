@@ -51,15 +51,15 @@ public class BaselineCommand implements Callable<Integer> {
         directory = directory.toAbsolutePath().normalize();
 
         if (!Files.exists(directory)) {
-            err.println("Error: Directory does not exist: " + directory);
+            err.println(CliUI.error("Error: Directory does not exist: " + directory));
             return 1;
         }
         if (!Files.isDirectory(directory)) {
-            err.println("Error: Path is not a directory: " + directory);
+            err.println(CliUI.error("Error: Path is not a directory: " + directory));
             return 1;
         }
         if (!Files.isReadable(directory)) {
-            err.println("Error: Directory is not accessible: " + directory);
+            err.println(CliUI.error("Error: Directory is not accessible: " + directory));
             return 1;
         }
 
@@ -78,7 +78,7 @@ public class BaselineCommand implements Callable<Integer> {
             manager.save();
 
             out.println();
-            out.println("  NEXIS BASELINE CREATED");
+            out.println("  " + CliUI.success("NEXIS BASELINE CREATED — Baseline created successfully."));
             out.println("  Target:    " + directory.toAbsolutePath().normalize());
             out.println("  Files:     " + files.size());
             out.println("  Saved to:  " + manager.getBaselinePath().toAbsolutePath().normalize());
@@ -86,7 +86,7 @@ public class BaselineCommand implements Callable<Integer> {
             return 0;
 
         } catch (IOException e) {
-            err.println("Error: " + e.getMessage());
+            err.println(CliUI.error("Error: " + e.getMessage()));
             return 1;
         }
     }
