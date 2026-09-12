@@ -15,16 +15,26 @@ import picocli.CommandLine.Spec;
 @Command(
     name = "nexis",
     version = "1.0.0",
-    header = "Nexis - File Integrity & Host Security Monitor",
-    synopsisHeading = "%nUsage:%n",
-    customSynopsis = { "  nexis <command> [options]", "" },
+    header = {
+        "NEXIS - File Integrity & Host Security Monitor",
+        "Version 1.0.0"
+    },
+    synopsisHeading = "%nUSAGE%n",
+    customSynopsis = { "  nexis <command> [options]" },
     descriptionHeading = "",
     description = {},
-    commandListHeading = "%nCommands:%n%n",
-    footerHeading = "%nAlso show:%n%n",
+    commandListHeading = "%nCOMMANDS%n%n",
+    footerHeading = "%nOPTIONS%n%n",
     footer = {
-        "  nexis --help",
-        "  nexis --version"
+        "  --help      Show this help message",
+        "  --version   Show Nexis version",
+        "",
+        "EXAMPLES",
+        "",
+        "  nexis baseline C:\\Users\\Tanmay\\Documents",
+        "  nexis scan C:\\Users\\Tanmay\\Documents",
+        "  nexis watch C:\\Users\\Tanmay\\Documents",
+        "  nexis report"
     },
     subcommands = {
         BaselineCommand.class,
@@ -137,7 +147,7 @@ public class NexisCLI implements Callable<Integer> {
                     PrintWriter err = parent.getErr() != null
                         ? parent.getErr()
                         : new PrintWriter(System.err, true);
-                    err.println(CliUI.error("Error: Unknown command '" + subcommand + "'. Type 'nexis help' to see available commands."));
+                    err.println(CliUI.error("Unknown command '" + subcommand + "'. Type 'nexis help' to see available commands."));
                     return 1;
                 }
             }

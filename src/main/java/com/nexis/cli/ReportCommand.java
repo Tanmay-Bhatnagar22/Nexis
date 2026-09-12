@@ -32,7 +32,7 @@ import picocli.CommandLine.ParentCommand;
  */
 @Command(
     name = "report",
-    description = "Generate a security event investigation report",
+    description = "View and manage security events",
     mixinStandardHelpOptions = true
 )
 public class ReportCommand implements Callable<Integer> {
@@ -83,7 +83,7 @@ public class ReportCommand implements Callable<Integer> {
                 out.flush();
                 return 0;
             } catch (IOException e) {
-                err.println(CliUI.error("Error: Failed to clear events — " + e.getMessage()));
+                err.println(CliUI.error("Error: Failed to clear events - " + e.getMessage()));
                 return 1;
             }
         }
@@ -93,7 +93,7 @@ public class ReportCommand implements Callable<Integer> {
             try {
                 severity = Severity.valueOf(severityStr.toUpperCase().trim());
             } catch (IllegalArgumentException e) {
-                err.println(CliUI.error("Error: Invalid severity '" + severityStr + "'. Allowed values: "
+                err.println(CliUI.error("Invalid severity '" + severityStr + "'. Allowed values: "
                     + Arrays.toString(Severity.values())));
                 return 1;
             }
@@ -104,7 +104,7 @@ public class ReportCommand implements Callable<Integer> {
             try {
                 eventType = EventType.valueOf(typeStr.toUpperCase().trim());
             } catch (IllegalArgumentException e) {
-                err.println(CliUI.error("Error: Invalid event type '" + typeStr + "'. Allowed values: "
+                err.println(CliUI.error("Invalid event type '" + typeStr + "'. Allowed values: "
                     + Arrays.toString(EventType.values())));
                 return 1;
             }
@@ -114,7 +114,7 @@ public class ReportCommand implements Callable<Integer> {
         try {
             repository = EventRepository.loadOrDefault(effectiveEventsPath);
         } catch (IOException e) {
-            err.println(CliUI.error("Error: Failed to load security events — " + e.getMessage()));
+            err.println(CliUI.error("Error: Failed to load security events - " + e.getMessage()));
             return 1;
         }
 
@@ -126,4 +126,3 @@ public class ReportCommand implements Callable<Integer> {
         return 0;
     }
 }
-

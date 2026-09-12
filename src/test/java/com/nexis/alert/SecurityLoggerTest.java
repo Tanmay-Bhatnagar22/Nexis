@@ -71,7 +71,7 @@ class SecurityLoggerTest {
     }
 
     // -------------------------------------------------------------------------
-    // 3. Appends — does not overwrite
+    // 3. Appends - does not overwrite
     // -------------------------------------------------------------------------
 
     @Test
@@ -137,7 +137,7 @@ class SecurityLoggerTest {
     @Test
     @DisplayName("6. log() does not throw when log path is a directory (simulated failure)")
     void logDoesNotThrowOnWriteFailure() throws IOException {
-        // Create a DIRECTORY at the log path location — this will prevent file creation
+        // Create a DIRECTORY at the log path location - this will prevent file creation
         Path blockingDir = tempDir.resolve("nexis.log");
         Files.createDirectory(blockingDir);
 
@@ -147,7 +147,7 @@ class SecurityLoggerTest {
             EventType.FILE_CREATED, Severity.INFO,
             tempDir.resolve("x.txt"), "Should not crash.");
 
-        // Must not throw — failure should be swallowed with a stderr message
+        // Must not throw - failure should be swallowed with a stderr message
         logger.log(event);
         // If we reach here, the test passes
     }

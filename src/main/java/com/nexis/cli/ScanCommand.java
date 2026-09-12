@@ -26,19 +26,19 @@ import picocli.CommandLine.ParentCommand;
 /**
  * CLI subcommand that performs an integrity scan against the stored baseline.
  *
- * <p>After the existing {@link ResultFormatter} summary is printed, each
+ * <p>After the structured {@link ResultFormatter} summary is printed, each
  * comparison result entry is mapped to a {@link SecurityEvent} and dispatched
  * through both {@link AlertManager} (CLI) and {@link SecurityLogger} (log file):
  * <ul>
- *   <li>MODIFIED files → {@code INTEGRITY_VIOLATION / CRITICAL}</li>
- *   <li>DELETED files  → {@code FILE_DELETED / WARNING}</li>
- *   <li>NEW files      → {@code FILE_CREATED / INFO}</li>
- *   <li>Scan errors    → {@code SYSTEM_ERROR / ERROR}</li>
+ *   <li>MODIFIED files -> {@code INTEGRITY_VIOLATION / CRITICAL}</li>
+ *   <li>DELETED files  -> {@code FILE_DELETED / WARNING}</li>
+ *   <li>NEW files      -> {@code FILE_CREATED / INFO}</li>
+ *   <li>Scan errors    -> {@code SYSTEM_ERROR / ERROR}</li>
  * </ul>
  */
 @Command(
     name = "scan",
-    description = "Scan a directory and compare against the integrity baseline",
+    description = "Scan files against the stored baseline",
     mixinStandardHelpOptions = true
 )
 public class ScanCommand implements Callable<Integer> {
@@ -74,15 +74,15 @@ public class ScanCommand implements Callable<Integer> {
         directory = directory.toAbsolutePath().normalize();
 
         if (!Files.exists(directory)) {
-            err.println(CliUI.error("Error: Directory does not exist: " + directory));
+            err.println(CliUI.error("Directory does not exist: " + directory));
             return 1;
         }
         if (!Files.isDirectory(directory)) {
-            err.println(CliUI.error("Error: Path is not a directory: " + directory));
+            err.println(CliUI.error("Path is not a directory: " + directory));
             return 1;
         }
         if (!Files.isReadable(directory)) {
-            err.println(CliUI.error("Error: Directory is not accessible: " + directory));
+            err.println(CliUI.error("Directory is not accessible: " + directory));
             return 1;
         }
 
@@ -108,11 +108,11 @@ public class ScanCommand implements Callable<Integer> {
         try {
             manager.load();
         } catch (BaselineStorageException e) {
-            err.println(CliUI.error("Unable to read baseline. Error: No baseline found. Run 'nexis baseline <directory>' first."));
+            err.println(CliUI.error("Unable to read baseline. No baseline found. Run 'nexis baseline <directory>' first."));
             err.println("  Detail: " + e.getMessage());
             return 1;
         } catch (IOException e) {
-            err.println(CliUI.error("Unable to read baseline. Error: Failed to load baseline — " + e.getMessage()));
+            err.println(CliUI.error("Unable to read baseline. Failed to load baseline - " + e.getMessage()));
             return 1;
         }
 
@@ -120,8 +120,8 @@ public class ScanCommand implements Callable<Integer> {
             ComparisonEngine engine = new ComparisonEngine();
             ComparisonResult result = engine.compare(directory, manager);
 
-            // Print the existing formatted summary (unchanged from previous days)
-            ResultFormatter.format(result, directory, out);
+            // Print the structured DFIR formatted summary
+            ResultFormatter.format(result, directory, effectiveBaselinePath, out);
 
             // Emit security events for all notable findings
             AlertManager alertManager = new AlertManager(out);
@@ -130,7 +130,7 @@ public class ScanCommand implements Callable<Integer> {
             try {
                 eventRepository = EventRepository.loadOrDefault(effectiveEventsPath);
             } catch (IOException e) {
-                err.println(CliUI.error("Error: Failed to load event repository — " + e.getMessage()));
+                err.println(CliUI.error("Failed to load event repository - " + e.getMessage()));
                 return 1;
             }
 
@@ -139,13 +139,13 @@ public class ScanCommand implements Callable<Integer> {
                 eventRepository.save();
             } catch (IOException e) {
                 // Non-fatal, reporting storage failure must not crash scan
-                err.println(CliUI.warning("[NEXIS] Warning: Failed to save event repository — " + e.getMessage()));
+                err.println(CliUI.warning("Failed to save event repository - " + e.getMessage()));
             }
 
             return result.isClean() ? 0 : 1;
 
         } catch (IOException e) {
-            err.println(CliUI.error("Error: Scan failed — " + e.getMessage()));
+            err.println(CliUI.error("Scan failed - " + e.getMessage()));
             return 1;
         }
     }
@@ -154,7 +154,7 @@ public class ScanCommand implements Callable<Integer> {
      * Iterates the {@link ComparisonResult} and emits one {@link SecurityEvent}
      * per notable entry to alert manager, security logger, and event repository.
      *
-     * <p>Only actionable findings are emitted — UNCHANGED files produce no event.
+     * <p>Only actionable findings are emitted - UNCHANGED files produce no event.
      *
      * @param result          the comparison result from the integrity engine
      * @param alertManager    alert display component
@@ -165,9 +165,9 @@ public class ScanCommand implements Callable<Integer> {
                                             AlertManager alertManager,
                                             SecurityLogger securityLogger,
                                             EventRepository eventRepository) {
-        // MODIFIED → INTEGRITY_VIOLATION / CRITICAL (hash mismatch = tamper indicator)
+        // MODIFIED -> INTEGRITY_VIOLATION / CRITICAL (hash mismatch = tamper indicator)
         for (ComparisonEntry entry : result.getModified()) {
-            String details = "SHA-256 hash differs from baseline — possible tampering detected."
+            String details = "SHA-256 hash differs from baseline - possible tampering detected."
                 + entry.getBaselineHash().map(h -> " Expected: " + h).orElse("")
                 + entry.getCurrentHash().map(h -> " Found: " + h).orElse("");
             SecurityEvent event = SecurityEvent.of(
@@ -177,7 +177,7 @@ public class ScanCommand implements Callable<Integer> {
             eventRepository.add(event);
         }
 
-        // DELETED → FILE_DELETED / WARNING
+        // DELETED -> FILE_DELETED / WARNING
         for (ComparisonEntry entry : result.getDeleted()) {
             SecurityEvent event = SecurityEvent.of(
                 EventType.FILE_DELETED, Severity.WARNING, entry.filePath(),
@@ -187,7 +187,7 @@ public class ScanCommand implements Callable<Integer> {
             eventRepository.add(event);
         }
 
-        // NEW → FILE_CREATED / INFO
+        // NEW -> FILE_CREATED / INFO
         for (ComparisonEntry entry : result.getNewFiles()) {
             SecurityEvent event = SecurityEvent.of(
                 EventType.FILE_CREATED, Severity.INFO, entry.filePath(),
@@ -197,7 +197,7 @@ public class ScanCommand implements Callable<Integer> {
             eventRepository.add(event);
         }
 
-        // Scan errors → SYSTEM_ERROR / ERROR
+        // Scan errors -> SYSTEM_ERROR / ERROR
         for (Map.Entry<Path, String> error : result.getErrors().entrySet()) {
             SecurityEvent event = SecurityEvent.of(
                 EventType.SYSTEM_ERROR, Severity.ERROR, error.getKey(),

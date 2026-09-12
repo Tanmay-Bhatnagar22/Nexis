@@ -8,18 +8,29 @@ import picocli.CommandLine;
 /**
  * Dedicated presentation and UI/UX component for Nexis CLI.
  *
- * <p>Encapsulates all visual styling, Unicode symbols, ANSI color formatting,
- * startup banner, and help screen rendering, keeping presentation logic strictly
- * decoupled from core security and integrity business logic.
+ * <p>Encapsulates visual styling, ASCII markers, ASCII separators, ANSI color
+ * formatting, startup banner, and help screen rendering, keeping presentation logic
+ * strictly decoupled from core security and integrity business logic.
+ *
+ * <p>All output is strictly 7-bit US-ASCII compliant to guarantee clean rendering
+ * without mojibake across Windows PowerShell, Windows CMD, VS Code integrated terminal,
+ * and standard Java console environments.
  */
 public final class CliUI {
 
-    public static final String SYMBOL_SUCCESS = "✓";
-    public static final String SYMBOL_WARNING = "!";
-    public static final String SYMBOL_ERROR   = "✗";
-    public static final String SYMBOL_INFO    = "→";
+    // ASCII Status Markers
+    public static final String SYMBOL_SUCCESS  = "[OK]";
+    public static final String SYMBOL_INFO     = "[INFO]";
+    public static final String SYMBOL_WARNING  = "[WARN]";
+    public static final String SYMBOL_ERROR    = "[ERROR]";
+    public static final String SYMBOL_CRITICAL = "[CRITICAL]";
 
-    // Standard ANSI Escape Codes
+    // Standard ASCII Separators
+    public static final String SEPARATOR_DOUBLE = "===============================================================";
+    public static final String SEPARATOR_SINGLE = "---------------------------------------------------------------";
+    public static final String SEPARATOR_DOT    = "...............................................................";
+
+    // Standard ANSI Escape Codes (optional visual styling)
     private static final String RESET       = "\u001B[0m";
     private static final String BOLD        = "\u001B[1m";
     private static final String RED         = "\u001B[31m";
@@ -28,19 +39,14 @@ public final class CliUI {
     private static final String CYAN        = "\u001B[36m";
 
     public static final String BANNER = """
-┌──────────────────────────────────────────────────────────────┐
-│                                                              │
-│   ███╗   ██╗███████╗██╗  ██╗██╗███████╗                     │
-│   ████╗  ██║██╔════╝╚██╗██╔╝██║██╔════╝                     │
-│   ██╔██╗ ██║█████╗   ╚███╔╝ ██║███████╗                     │
-│   ██║╚██╗██║██╔══╝   ██╔██╗ ██║╚════██║                     │
-│   ██║ ╚████║███████╗██╔╝ ██╗██║███████║                     │
-│   ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚═╝╚══════╝                     │
-│                                                              │
-│          File Integrity & Host Security Monitor             │
-│                 Nexis — version 1.0.0                       │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘""";
++--------------------------------------------------------------+
+|                                                              |
+|                         NEXIS                                |
+|                                                              |
+|          File Integrity & Host Security Monitor              |
+|                    Version 1.0.0                             |
+|                                                              |
++--------------------------------------------------------------+""";
 
     private CliUI() {
         // Prevent instantiation of utility class
@@ -59,6 +65,10 @@ public final class CliUI {
         return isAnsi() ? GREEN + SYMBOL_SUCCESS + RESET : SYMBOL_SUCCESS;
     }
 
+    public static String infoMarker() {
+        return isAnsi() ? CYAN + SYMBOL_INFO + RESET : SYMBOL_INFO;
+    }
+
     public static String warningMarker() {
         return isAnsi() ? YELLOW + SYMBOL_WARNING + RESET : SYMBOL_WARNING;
     }
@@ -67,12 +77,16 @@ public final class CliUI {
         return isAnsi() ? RED + SYMBOL_ERROR + RESET : SYMBOL_ERROR;
     }
 
-    public static String infoMarker() {
-        return isAnsi() ? CYAN + SYMBOL_INFO + RESET : SYMBOL_INFO;
+    public static String criticalMarker() {
+        return isAnsi() ? RED + BOLD + SYMBOL_CRITICAL + RESET : SYMBOL_CRITICAL;
     }
 
     public static String success(String message) {
         return successMarker() + " " + message;
+    }
+
+    public static String info(String message) {
+        return infoMarker() + " " + message;
     }
 
     public static String warning(String message) {
@@ -83,8 +97,8 @@ public final class CliUI {
         return errorMarker() + " " + message;
     }
 
-    public static String info(String message) {
-        return infoMarker() + " " + message;
+    public static String critical(String message) {
+        return criticalMarker() + " " + message;
     }
 
     public static String bold(String text) {
@@ -108,7 +122,7 @@ public final class CliUI {
     }
 
     /**
-     * Renders the stylized startup screen when Nexis is launched without arguments.
+     * Renders the stylized ASCII startup screen when Nexis is launched without arguments.
      *
      * @param out output writer
      */
@@ -130,30 +144,37 @@ public final class CliUI {
     }
 
     /**
-     * Renders the clean, security-oriented help screen.
+     * Renders the clean, security-oriented custom help screen.
      *
      * @param out output writer
      */
     public static void printHelp(PrintWriter out) {
         Objects.requireNonNull(out, "PrintWriter cannot be null");
-        out.println("Nexis - File Integrity & Host Security Monitor");
+        out.println("NEXIS - File Integrity & Host Security Monitor");
+        out.println("Version 1.0.0");
         out.println();
-        out.println("Usage:");
+        out.println("USAGE");
         out.println("  nexis <command> [options]");
         out.println();
-        out.println("Commands:");
+        out.println("COMMANDS");
         out.println();
-        out.println("  baseline    Create or update the integrity baseline for a directory");
-        out.println("  scan        Scan a directory and compare against the integrity baseline");
-        out.println("  watch       Monitor a directory in real-time for file system changes");
-        out.println("  report      Generate a security event investigation report");
+        out.println("  baseline    Create or update the integrity baseline");
+        out.println("  scan        Scan files against the stored baseline");
+        out.println("  watch       Monitor a directory for real-time changes");
+        out.println("  report      View and manage security events");
         out.println();
-        out.println("Also show:");
+        out.println("OPTIONS");
         out.println();
-        out.println("  nexis --help");
-        out.println("  nexis --version");
+        out.println("  --help      Show this help message");
+        out.println("  --version   Show Nexis version");
+        out.println();
+        out.println("EXAMPLES");
+        out.println();
+        out.println("  nexis baseline C:\\Users\\Tanmay\\Documents");
+        out.println("  nexis scan C:\\Users\\Tanmay\\Documents");
+        out.println("  nexis watch C:\\Users\\Tanmay\\Documents");
+        out.println("  nexis report");
         out.println();
         out.flush();
     }
 }
-

@@ -19,7 +19,7 @@ import picocli.CommandLine.ParentCommand;
  */
 @Command(
     name = "baseline",
-    description = "Create or update the integrity baseline for a directory",
+    description = "Create or update the integrity baseline",
     mixinStandardHelpOptions = true
 )
 public class BaselineCommand implements Callable<Integer> {
@@ -51,15 +51,15 @@ public class BaselineCommand implements Callable<Integer> {
         directory = directory.toAbsolutePath().normalize();
 
         if (!Files.exists(directory)) {
-            err.println(CliUI.error("Error: Directory does not exist: " + directory));
+            err.println(CliUI.error("Directory does not exist: " + directory));
             return 1;
         }
         if (!Files.isDirectory(directory)) {
-            err.println(CliUI.error("Error: Path is not a directory: " + directory));
+            err.println(CliUI.error("Path is not a directory: " + directory));
             return 1;
         }
         if (!Files.isReadable(directory)) {
-            err.println(CliUI.error("Error: Directory is not accessible: " + directory));
+            err.println(CliUI.error("Directory is not accessible: " + directory));
             return 1;
         }
 
@@ -78,15 +78,20 @@ public class BaselineCommand implements Callable<Integer> {
             manager.save();
 
             out.println();
-            out.println("  " + CliUI.success("NEXIS BASELINE CREATED — Baseline created successfully."));
+            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println("NEXIS BASELINE CREATED");
+            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println();
+            out.println(CliUI.success("Baseline created successfully."));
             out.println("  Target:    " + directory.toAbsolutePath().normalize());
             out.println("  Files:     " + files.size());
             out.println("  Saved to:  " + manager.getBaselinePath().toAbsolutePath().normalize());
             out.println();
+            out.println(CliUI.SEPARATOR_SINGLE);
             return 0;
 
         } catch (IOException e) {
-            err.println(CliUI.error("Error: " + e.getMessage()));
+            err.println(CliUI.error(e.getMessage()));
             return 1;
         }
     }

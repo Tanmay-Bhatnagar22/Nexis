@@ -21,7 +21,7 @@ public final class SecurityEvent {
     private final Instant timestamp;
     private final EventType eventType;
     private final Severity severity;
-    private final Path filePath;   // nullable — not all events have an associated path
+    private final Path filePath;   // nullable - not all events have an associated path
     private final String details;
 
     /**

@@ -123,7 +123,7 @@ class WatchCommandTest {
         assertEquals(EventType.INTEGRITY_VIOLATION, event.getEventType());
         assertEquals(Severity.CRITICAL, event.getSeverity());
         assertEquals(file.toAbsolutePath().normalize(), event.getFilePath());
-        assertTrue(event.getDetails().contains("SHA-256 hash differs from baseline — possible tampering detected."));
+        assertTrue(event.getDetails().contains("SHA-256 hash differs from baseline - possible tampering detected."));
         assertTrue(event.getDetails().contains("Expected:"));
         assertTrue(event.getDetails().contains("Found:"));
 

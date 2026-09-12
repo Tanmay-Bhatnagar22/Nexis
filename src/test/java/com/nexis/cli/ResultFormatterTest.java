@@ -3,6 +3,7 @@ package com.nexis.cli;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -41,10 +42,12 @@ class ResultFormatterTest {
         ResultFormatter.format(result, tempDir, pw);
         String output = sw.toString();
 
-        assertTrue(output.contains("NEXIS FILE INTEGRITY SCAN"), "Should contain header");
+        assertTrue(output.contains("NEXIS SCAN"), "Should contain header");
         assertTrue(output.contains("UNCHANGED"), "Should contain UNCHANGED label");
         assertTrue(output.contains("CLEAN"), "Should indicate clean status");
         assertFalse(output.contains("DIFFERENCES DETECTED"), "Should not indicate differences");
+        assertTrue(StandardCharsets.US_ASCII.newEncoder().canEncode(output),
+            "Output must be strictly 7-bit US-ASCII");
     }
 
     @Test
@@ -88,6 +91,8 @@ class ResultFormatterTest {
         assertTrue(output.contains("suspicious.exe"), "Should list new file");
         assertTrue(output.contains("old_config.txt"), "Should list deleted file");
         assertTrue(output.contains("DIFFERENCES DETECTED"), "Should indicate differences");
+        assertTrue(StandardCharsets.US_ASCII.newEncoder().canEncode(output),
+            "Output must be strictly 7-bit US-ASCII");
     }
 
     @Test
@@ -111,6 +116,8 @@ class ResultFormatterTest {
         assertTrue(output.contains("Errors"), "Should show error count");
         assertTrue(output.contains("unreadable.bin"), "Should list errored file");
         assertTrue(output.contains("Permission denied"), "Should show error detail");
+        assertTrue(StandardCharsets.US_ASCII.newEncoder().canEncode(output),
+            "Output must be strictly 7-bit US-ASCII");
     }
 
     @Test
@@ -138,5 +145,35 @@ class ResultFormatterTest {
         String output = sw.toString();
 
         assertTrue(output.contains("inner.txt"), "Should display filename");
+    }
+
+    @Test
+    @DisplayName("5. Structured scan with explicit baseline renders header, baseline path, and ASCII borders")
+    void scanWithBaselineRendersStructuredLayout() {
+        ComparisonEntry unchanged = new ComparisonEntry(
+            Path.of("file.txt"),
+            ComparisonStatus.UNCHANGED,
+            "aaa",
+            "aaa"
+        );
+        Path baselinePath = tempDir.resolve("data").resolve("baseline.json");
+
+        ComparisonResult result = new ComparisonResult(tempDir, java.util.List.of(unchanged), Collections.emptyMap());
+
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+
+        ResultFormatter.format(result, tempDir, baselinePath, pw);
+        String output = sw.toString();
+
+        assertTrue(output.contains("NEXIS SCAN"));
+        assertTrue(output.contains("Target:"));
+        assertTrue(output.contains("Baseline:"));
+        assertTrue(output.contains("baseline.json"));
+        assertTrue(output.contains("SCAN RESULTS"));
+        assertTrue(output.contains("[OK] No integrity violations detected."));
+        assertTrue(output.contains("Scan completed successfully."));
+        assertTrue(StandardCharsets.US_ASCII.newEncoder().canEncode(output),
+            "Output must be strictly 7-bit US-ASCII");
     }
 }

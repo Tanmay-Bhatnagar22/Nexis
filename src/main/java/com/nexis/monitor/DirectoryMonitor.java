@@ -105,7 +105,7 @@ public class DirectoryMonitor implements AutoCloseable {
                 Thread.currentThread().interrupt();
                 break;
             } catch (ClosedWatchServiceException e) {
-                // stop() was called — exit cleanly
+                // stop() was called - exit cleanly
                 break;
             }
 
@@ -113,7 +113,7 @@ public class DirectoryMonitor implements AutoCloseable {
             for (WatchEvent<?> event : events) {
                 WatchEvent.Kind<?> kind = event.kind();
 
-                // OVERFLOW means events were dropped by the OS — skip silently
+                // OVERFLOW means events were dropped by the OS - skip silently
                 if (kind == StandardWatchEventKinds.OVERFLOW) {
                     continue;
                 }
@@ -133,7 +133,7 @@ public class DirectoryMonitor implements AutoCloseable {
             // Reset the key to receive further events; if it has become invalid, stop
             boolean valid = key.reset();
             if (!valid) {
-                // Directory was deleted or became inaccessible — exit gracefully
+                // Directory was deleted or became inaccessible - exit gracefully
                 break;
             }
         }
@@ -148,7 +148,7 @@ public class DirectoryMonitor implements AutoCloseable {
         try {
             watchService.close();
         } catch (IOException e) {
-            // Best-effort close — ignore secondary errors on shutdown
+            // Best-effort close - ignore secondary errors on shutdown
         }
     }
 

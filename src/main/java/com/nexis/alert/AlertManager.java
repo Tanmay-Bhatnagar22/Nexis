@@ -15,7 +15,7 @@ import java.util.Objects;
  *   <li>Print it to the supplied {@link PrintWriter}</li>
  * </ul>
  *
- * <p>This class has no persistence responsibility — log file writing is handled
+ * <p>This class has no persistence responsibility - log file writing is handled
  * exclusively by {@link SecurityLogger}.
  *
  * <p>Example output:

@@ -16,7 +16,7 @@ import java.util.Objects;
  * <ul>
  *   <li>Append one structured log line per {@link SecurityEvent} to {@code logs/nexis.log}</li>
  *   <li>Create the log file and its parent directory automatically if absent</li>
- *   <li>Handle {@link IOException} safely — a logging failure is reported to
+ *   <li>Handle {@link IOException} safely - a logging failure is reported to
  *       {@code System.err} but must never propagate to crash the monitoring engine</li>
  * </ul>
  *
@@ -26,7 +26,7 @@ import java.util.Objects;
  * 2026-09-06 14:35:42 | CRITICAL | INTEGRITY_VIOLATION | C:\watch\config.xml | SHA-256 hash differs from baseline.
  * </pre>
  *
- * <p>This class has no CLI display responsibility — alert formatting is handled
+ * <p>This class has no CLI display responsibility - alert formatting is handled
  * exclusively by {@link AlertManager}.
  */
 public final class SecurityLogger {
@@ -69,7 +69,7 @@ public final class SecurityLogger {
      *
      * <p>If the log directory or file does not yet exist, they are created automatically.
      * If any {@link IOException} occurs during logging, it is reported to {@code System.err}
-     * and the method returns normally — it never throws, so a logging failure cannot
+     * and the method returns normally - it never throws, so a logging failure cannot
      * interrupt the monitoring engine.
      *
      * @param event the security event to log; must not be null
@@ -90,7 +90,7 @@ public final class SecurityLogger {
             );
         } catch (IOException e) {
             // Logging failure must never crash the monitoring engine.
-            System.err.println("[NEXIS] Warning: Failed to write security log entry — " + e.getMessage());
+            System.err.println("[NEXIS] Warning: Failed to write security log entry - " + e.getMessage());
         }
     }
 

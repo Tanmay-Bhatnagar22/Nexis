@@ -21,10 +21,13 @@ import com.nexis.alert.Severity;
  *   <li>Gracefully handle empty reports without displaying misleading statistics</li>
  *   <li>Produce clean, non-bloated CLI reports following Nexis formatting conventions</li>
  * </ul>
+ *
+ * <p>All output uses strict 7-bit US-ASCII rendering to prevent mojibake in Windows console environments.
  */
 public class ReportGenerator {
 
-    private static final String SEPARATOR = "────────────────────────────────────";
+    private static final String SEPARATOR_DOUBLE = "===============================================================";
+    private static final String SEPARATOR_SINGLE = "---------------------------------------------------------------";
     private static final DateTimeFormatter TIME_FORMATTER =
         DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
@@ -40,8 +43,9 @@ public class ReportGenerator {
 
         StringBuilder sb = new StringBuilder();
 
+        sb.append(SEPARATOR_DOUBLE).append(System.lineSeparator());
         sb.append("NEXIS SECURITY REPORT").append(System.lineSeparator());
-        sb.append(SEPARATOR).append(System.lineSeparator()).append(System.lineSeparator());
+        sb.append(SEPARATOR_DOUBLE).append(System.lineSeparator()).append(System.lineSeparator());
 
         if (events.isEmpty()) {
             sb.append("No security events recorded.").append(System.lineSeparator());
@@ -64,7 +68,7 @@ public class ReportGenerator {
 
         // 2. Event breakdown section (non-zero types)
         sb.append("EVENT BREAKDOWN").append(System.lineSeparator());
-        sb.append(SEPARATOR).append(System.lineSeparator());
+        sb.append(SEPARATOR_SINGLE).append(System.lineSeparator());
         for (EventType type : EventType.values()) {
             long count = events.stream().filter(e -> e.getEventType() == type).count();
             if (count > 0) {
@@ -80,7 +84,7 @@ public class ReportGenerator {
 
         if (!criticalEvents.isEmpty()) {
             sb.append("CRITICAL EVENTS").append(System.lineSeparator());
-            sb.append(SEPARATOR).append(System.lineSeparator());
+            sb.append(SEPARATOR_SINGLE).append(System.lineSeparator());
             for (int i = 0; i < criticalEvents.size(); i++) {
                 SecurityEvent event = criticalEvents.get(i);
                 formatEventDetail(sb, event);
@@ -91,7 +95,7 @@ public class ReportGenerator {
         } else if (totalCount > 0) {
             // When filtered to non-critical events, show event details so the user can investigate
             sb.append("EVENT DETAILS").append(System.lineSeparator());
-            sb.append(SEPARATOR).append(System.lineSeparator());
+            sb.append(SEPARATOR_SINGLE).append(System.lineSeparator());
             List<SecurityEvent> eventList = List.copyOf(events);
             for (int i = 0; i < eventList.size(); i++) {
                 SecurityEvent event = eventList.get(i);
@@ -129,4 +133,3 @@ public class ReportGenerator {
         sb.append("Details: ").append(event.getDetails()).append(System.lineSeparator());
     }
 }
-

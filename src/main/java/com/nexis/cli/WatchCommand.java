@@ -41,7 +41,7 @@ import picocli.CommandLine.ParentCommand;
  */
 @Command(
     name = "watch",
-    description = "Monitor a directory in real-time for file system changes",
+    description = "Monitor a directory for real-time changes",
     mixinStandardHelpOptions = true
 )
 public class WatchCommand implements Callable<Integer> {
@@ -98,15 +98,15 @@ public class WatchCommand implements Callable<Integer> {
         directory = directory.toAbsolutePath().normalize();
 
         if (!Files.exists(directory)) {
-            err.println(CliUI.error("Error: Directory does not exist: " + directory));
+            err.println(CliUI.error("Directory does not exist: " + directory));
             return 1;
         }
         if (!Files.isDirectory(directory)) {
-            err.println(CliUI.error("Error: Path is not a directory: " + directory));
+            err.println(CliUI.error("Path is not a directory: " + directory));
             return 1;
         }
         if (!Files.isReadable(directory)) {
-            err.println(CliUI.error("Error: Directory is not accessible: " + directory));
+            err.println(CliUI.error("Directory is not accessible: " + directory));
             return 1;
         }
 
@@ -135,7 +135,7 @@ public class WatchCommand implements Callable<Integer> {
                 try {
                     manager.load();
                 } catch (IOException e) {
-                    err.println(CliUI.warning("Warning: Failed to load baseline — " + e.getMessage()));
+                    err.println(CliUI.warning("Failed to load baseline - " + e.getMessage()));
                 }
             }
             this.baselineManager = manager;
@@ -151,7 +151,7 @@ public class WatchCommand implements Callable<Integer> {
         try {
             eventRepository = EventRepository.loadOrDefault(effectiveEventsPath);
         } catch (IOException e) {
-            err.println(CliUI.error("Error: Failed to load event repository — " + e.getMessage()));
+            err.println(CliUI.error("Failed to load event repository - " + e.getMessage()));
             return 1;
         }
 
@@ -166,19 +166,37 @@ public class WatchCommand implements Callable<Integer> {
                 } catch (IOException ignored) {
                 }
                 out.println();
-                out.println(CliUI.info("[WATCH] Monitoring stopped."));
+                out.println(CliUI.SEPARATOR_SINGLE);
+                out.println(CliUI.info("Monitoring stopped."));
+                out.println(CliUI.SEPARATOR_DOUBLE);
                 out.flush();
             }));
 
-            out.println(CliUI.info("Monitoring started... Monitoring: " + directory));
+            out.println();
+            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println("NEXIS WATCH");
+            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println();
+            out.println("Monitoring:");
+            out.println("  " + directory);
+            out.println();
+            out.println("Status:");
+            out.println("  ACTIVE");
+            out.println();
+            out.println("Press Ctrl+C to stop monitoring.");
+            out.println();
+            out.println(CliUI.SEPARATOR_SINGLE);
+            out.println();
+            out.println(CliUI.info("Monitoring started."));
             out.println("  Alerts and events are logged to: " + securityLogger.getLogPath().toAbsolutePath().normalize());
+            out.println();
             out.flush();
 
             // Blocks until stop() is called (e.g. via Ctrl+C shutdown hook)
             monitor.start(event -> dispatchEvent(event, alertManager, securityLogger, eventRepository));
 
         } catch (IOException e) {
-            err.println(CliUI.error("Error: Failed to initialize file watcher — " + e.getMessage()));
+            err.println(CliUI.error("Failed to initialize file watcher - " + e.getMessage()));
             return 1;
         }
 
@@ -191,10 +209,10 @@ public class WatchCommand implements Callable<Integer> {
      *
      * <p>Event mappings:
      * <ul>
-     *   <li>CREATED  → FILE_CREATED / INFO</li>
-     *   <li>MODIFIED → INTEGRITY_VIOLATION / CRITICAL if hash differs from baseline,
-     *                  FILE_MODIFIED / WARNING if hash is unchanged or unbaselined</li>
-     *   <li>DELETED  → FILE_DELETED / WARNING</li>
+     *   <li>CREATED  -> FILE_CREATED / INFO</li>
+     *   <li>MODIFIED -> INTEGRITY_VIOLATION / CRITICAL if hash differs from baseline,
+     *                   FILE_MODIFIED / WARNING if hash is unchanged or unbaselined</li>
+     *   <li>DELETED  -> FILE_DELETED / WARNING</li>
      * </ul>
      *
      * @param event          the raw filesystem event from the WatchService
@@ -228,7 +246,7 @@ public class WatchCommand implements Callable<Integer> {
                         if (baselineEntry != null) {
                             ComparisonEntry comparison = ce.compareFile(file, currentHash, baselineEntry);
                             if (comparison.isModified()) {
-                                String details = "SHA-256 hash differs from baseline — possible tampering detected."
+                                String details = "SHA-256 hash differs from baseline - possible tampering detected."
                                     + comparison.getBaselineHash().map(h -> " Expected: " + h).orElse("")
                                     + comparison.getCurrentHash().map(h -> " Found: " + h).orElse("");
                                 yield SecurityEvent.of(EventType.INTEGRITY_VIOLATION, Severity.CRITICAL, file, details);
@@ -263,7 +281,7 @@ public class WatchCommand implements Callable<Integer> {
             return secEvent;
 
         } catch (Exception e) {
-            // Unexpected error in event dispatch — report as MONITORING_ERROR, never crash the loop
+            // Unexpected error in event dispatch - report as MONITORING_ERROR, never crash the loop
             SecurityEvent errEvent = SecurityEvent.of(
                 EventType.MONITORING_ERROR,
                 Severity.ERROR,
@@ -321,7 +339,7 @@ public class WatchCommand implements Callable<Integer> {
                 return HashCalculator.calculateSha256(file);
             }
         } catch (IOException | IllegalArgumentException | SecurityException ignored) {
-            // File may have been removed immediately after the event — report without hash
+            // File may have been removed immediately after the event - report without hash
         }
         return null;
     }

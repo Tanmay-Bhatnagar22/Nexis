@@ -21,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
  *
  * <p>Event-detection tests run the monitor on a background thread, perform the
  * filesystem operation on the test thread, then wait up to 5 seconds for the
- * event via a {@link CountDownLatch} — no arbitrary {@code Thread.sleep()} calls.
+ * event via a {@link CountDownLatch} - no arbitrary {@code Thread.sleep()} calls.
  *
  * <p>All {@link DirectoryMonitor} instances are opened in try-with-resources blocks
  * so the underlying WatchService is always released, even if a test fails or throws.
@@ -35,7 +35,7 @@ class DirectoryMonitorTest {
     Path tempDir;
 
     // -------------------------------------------------------------------------
-    // 1. Valid directory — monitor starts without exception
+    // 1. Valid directory - monitor starts without exception
     // -------------------------------------------------------------------------
 
     @Test
@@ -44,7 +44,7 @@ class DirectoryMonitorTest {
         try (DirectoryMonitor monitor = new DirectoryMonitor(tempDir)) {
             assertNotNull(monitor, "DirectoryMonitor should be created without error");
             assertEquals(tempDir.toAbsolutePath().normalize(), monitor.getDirectory());
-        } // close() = stop() — WatchService released here
+        } // close() = stop() - WatchService released here
     }
 
     // -------------------------------------------------------------------------
@@ -245,6 +245,6 @@ class DirectoryMonitorTest {
         try (DirectoryMonitor monitor = new DirectoryMonitor(tempDir)) {
             monitor.stop(); // first explicit stop
         }
-        // try-with-resources calls close() -> stop() a second time — must not throw
+        // try-with-resources calls close() -> stop() a second time - must not throw
     }
 }
