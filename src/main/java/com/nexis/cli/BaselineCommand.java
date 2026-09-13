@@ -78,16 +78,16 @@ public class BaselineCommand implements Callable<Integer> {
             manager.save();
 
             out.println();
-            out.println(CliUI.SEPARATOR_DOUBLE);
-            out.println("NEXIS BASELINE CREATED");
-            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
+            out.println(CliUI.cyan("NEXIS BASELINE CREATED"));
+            out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
             out.println();
             out.println(CliUI.success("Baseline created successfully."));
             out.println("  Target:    " + directory.toAbsolutePath().normalize());
             out.println("  Files:     " + files.size());
             out.println("  Saved to:  " + manager.getBaselinePath().toAbsolutePath().normalize());
             out.println();
-            out.println(CliUI.SEPARATOR_SINGLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_SINGLE));
             return 0;
 
         } catch (IOException e) {

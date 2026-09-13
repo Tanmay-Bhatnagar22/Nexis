@@ -166,16 +166,16 @@ public class WatchCommand implements Callable<Integer> {
                 } catch (IOException ignored) {
                 }
                 out.println();
-                out.println(CliUI.SEPARATOR_SINGLE);
+                out.println(CliUI.cyan(CliUI.SEPARATOR_SINGLE));
                 out.println(CliUI.info("Monitoring stopped."));
-                out.println(CliUI.SEPARATOR_DOUBLE);
+                out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
                 out.flush();
             }));
 
             out.println();
-            out.println(CliUI.SEPARATOR_DOUBLE);
-            out.println("NEXIS WATCH");
-            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
+            out.println(CliUI.cyan("NEXIS WATCH"));
+            out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
             out.println();
             out.println("Monitoring:");
             out.println("  " + directory);
@@ -185,7 +185,7 @@ public class WatchCommand implements Callable<Integer> {
             out.println();
             out.println("Press Ctrl+C to stop monitoring.");
             out.println();
-            out.println(CliUI.SEPARATOR_SINGLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_SINGLE));
             out.println();
             out.println(CliUI.info("Monitoring started."));
             out.println("  Alerts and events are logged to: " + securityLogger.getLogPath().toAbsolutePath().normalize());

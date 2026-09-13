@@ -17,9 +17,11 @@ import picocli.CommandLine.Spec;
     version = "1.0.0",
     header = {
         "NEXIS - File Integrity & Host Security Monitor",
-        "Version 1.0.0"
+        "Version 1.0.0",
+        "",
+        "==============================================================="
     },
-    synopsisHeading = "%nUSAGE%n",
+    synopsisHeading = "%nUSAGE%n%n",
     customSynopsis = { "  nexis <command> [options]" },
     descriptionHeading = "",
     description = {},

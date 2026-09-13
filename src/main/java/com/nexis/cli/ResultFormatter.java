@@ -48,9 +48,9 @@ public final class ResultFormatter {
         Path normTarget = target.toAbsolutePath().normalize();
 
         out.println();
-        out.println(CliUI.SEPARATOR_DOUBLE);
-        out.println("NEXIS SCAN");
-        out.println(CliUI.SEPARATOR_DOUBLE);
+        out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
+        out.println(CliUI.cyan("NEXIS SCAN"));
+        out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
         out.println();
         out.println("Target:");
         out.println("  " + normTarget);
@@ -60,26 +60,26 @@ public final class ResultFormatter {
             out.println("  " + baselinePath.toAbsolutePath().normalize());
         }
         out.println();
-        out.println(CliUI.SEPARATOR_SINGLE);
+        out.println(CliUI.cyan(CliUI.SEPARATOR_SINGLE));
         out.println();
 
         if (result.isClean()) {
-            out.println("SCAN RESULTS");
+            out.println(CliUI.cyan("SCAN RESULTS"));
             out.println();
             out.println("  " + CliUI.success("No integrity violations detected. Status: CLEAN"));
             out.println();
-            out.printf("  Files scanned:       %d%n", result.getTotalCount());
-            out.printf("  Files unchanged:     %d  (UNCHANGED)%n", result.getUnchangedCount());
-            out.printf("  Files modified:      %d  (MODIFIED)%n", result.getModifiedCount());
-            out.printf("  Files created:       %d  (NEW)%n", result.getNewCount());
-            out.printf("  Files deleted:       %d  (DELETED)%n", result.getDeletedCount());
+            out.printf("  Files scanned:        %d%n", result.getTotalCount());
+            out.printf("  Files unchanged:      %d  (UNCHANGED)%n", result.getUnchangedCount());
+            out.printf("  Files modified:       %d  (MODIFIED)%n", result.getModifiedCount());
+            out.printf("  Files created:        %d  (NEW)%n", result.getNewCount());
+            out.printf("  Files deleted:        %d  (DELETED)%n", result.getDeletedCount());
             if (result.getErrorCount() > 0) {
-                out.printf("  Errors:              %d%n", result.getErrorCount());
+                out.printf("  Errors:               %d%n", result.getErrorCount());
             }
             out.println();
-            out.println(CliUI.SEPARATOR_SINGLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_SINGLE));
             out.println("Scan completed successfully.");
-            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
         } else {
             // Report specific modified / integrity violation entries
             for (ComparisonEntry entry : result.getModified()) {
@@ -126,9 +126,9 @@ public final class ResultFormatter {
                 }
             }
 
-            out.println(CliUI.SEPARATOR_SINGLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_SINGLE));
             out.println();
-            out.println("SUMMARY");
+            out.println(CliUI.cyan("SUMMARY"));
             out.println();
             out.println("  Status: DIFFERENCES DETECTED");
             out.println();
@@ -142,7 +142,7 @@ public final class ResultFormatter {
                 out.printf("  Errors:               %d%n", result.getErrorCount());
             }
             out.println();
-            out.println(CliUI.SEPARATOR_DOUBLE);
+            out.println(CliUI.cyan(CliUI.SEPARATOR_DOUBLE));
         }
 
         out.flush();
