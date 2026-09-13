@@ -2,6 +2,34 @@
 
 **File Integrity & Host Intrusion Detection Monitor**
 
+![Java](https://img.shields.io/badge/Java-26%2B-ED8B00?logo=openjdk&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-3.9%2B-C71A36?logo=apachemaven&logoColor=white)
+![picocli](https://img.shields.io/badge/picocli-4.7.6-brightgreen)
+![Gson](https://img.shields.io/badge/Gson-2.12.1-blue)
+![JUnit](https://img.shields.io/badge/JUnit-5.13.4-25A162?logo=junit5&logoColor=white)
+![SHA-256](https://img.shields.io/badge/Hash-SHA--256-9B59B6)
+![Version](https://img.shields.io/badge/version-1.0.0-informational)
+![License](https://img.shields.io/badge/license-MIT-success)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Technologies Used](#technologies-used)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Running Nexis](#running-nexis)
+- [Testing](#testing)
+- [Example Workflow](#example-workflow)
+- [Screenshots](#screenshots)
+- [Security Considerations](#security-considerations)
+- [Limitations](#limitations)
+- [Future Enhancements](#future-enhancements)
+- [License](#license)
+
 ---
 
 ## Overview
@@ -165,6 +193,60 @@ ScanCommand / WatchCommand  →  SecurityEvent
                                     ├── SecurityLogger   → logs/nexis.log
                                     └── EventRepository  → ReportGenerator → CLI report
 ```
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     USER INTERFACE LAYER                    │
+│                                                             │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐  │
+│  │  Baseline  │ │    Scan    │ │    Watch   │ │  Report  │  │
+│  │   Command  │ │   Command  │ │   Command  │ │ Command  │  │
+│  └────────────┘ └────────────┘ └────────────┘ └──────────┘  │
+│                     Nexis CLI / picocli                     │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     CORE ENGINE LAYER                       │
+│                                                             │
+│  ┌──────────────┐ ┌──────────────┐ ┌─────────────────────┐  │
+│  │   Baseline   │ │   Scanner    │ │     Integrity       │  │
+│  │  Management  │ │    Engine    │ │     Detection       │  │
+│  └──────────────┘ └──────────────┘ └─────────────────────┘  │
+│                                                             │
+│  ┌──────────────┐ ┌──────────────┐                          │
+│  │   Monitor    │ │    Alert     │                          │
+│  │  WatchService│ │ Event Engine │                          │
+│  └──────────────┘ └──────────────┘                          │
+└────────────────────────────┬────────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  DATA & PERSISTENCE LAYER                   │
+│                                                             │
+│  ┌──────────────┐ ┌──────────────┐ ┌─────────────────────┐  │
+│  │ SHA-256 Hash │ │   Baseline   │ │    Security Event   │  │
+│  │  Calculation │ │ JSON Storage │ │    Log / Storage    │  │
+│  └──────────────┘ └──────────────┘ └─────────────────────┘  │
+│                                                             │
+│             File System / Persistent Data                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Summary
+
+| Layer | Classes | Responsibility |
+|---|---|---|
+| **CLI Layer** | `NexisCLI`, `*Command`, `CliUI`, `ResultFormatter` | Command parsing, user interaction, output formatting |
+| **Scan Engine** | `ComparisonEngine`, `ComparisonResult`, `ComparisonEntry` | Baseline vs. current filesystem comparison; classifies UNCHANGED / MODIFIED / NEW / DELETED |
+| **Hash Calculator** | `HashCalculator` | SHA-256 streaming hash computation (8 KB buffer, never loads full file) |
+| **File Scanner** | `FileScanner` | Recursive file discovery; symbolic links are never followed |
+| **Baseline** | `BaselineManager`, `BaselineStorage`, `BaselineEntry` | In-memory baseline store; versioned JSON persistence in `data/baseline.json` |
+| **Monitor** | `DirectoryMonitor`, `MonitorEvent` | Real-time filesystem event loop via Java `WatchService` |
+| **Alert & Logging** | `AlertManager`, `SecurityLogger`, `SecurityEvent` | Structured security events; CLI display; append-only log in `logs/nexis.log` |
+| **Reporting** | `EventRepository`, `EventStorage`, `ReportGenerator` | Persisted event store in `data/events.json`; filtered security reports |
 
 ---
 
