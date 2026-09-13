@@ -22,3 +22,6 @@ hs_err_pid*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Maven Shade Plugin generated file
+dependency-reduced-pom.xml
