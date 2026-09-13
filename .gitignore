@@ -25,3 +25,6 @@ Thumbs.db
 
 # Maven Shade Plugin generated file
 dependency-reduced-pom.xml
+
+# Packaging output
+/dist/
