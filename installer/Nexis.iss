@@ -47,9 +47,6 @@ VersionInfoProductVersion={#MyAppVersion}
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-
 [Files]
 ; Complete application image from Phase 6/7
 Source: "..\dist\Nexis\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -57,8 +54,10 @@ Source: "..\dist\Nexis\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\packaging\Nexis.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Nexis.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Nexis.ico"; Tasks: desktopicon
+; Dedicated Start Menu program group: Nexis\Nexis.lnk
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\Nexis.ico"
+; Desktop shortcut: Nexis.lnk
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\Nexis.ico"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--help"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
