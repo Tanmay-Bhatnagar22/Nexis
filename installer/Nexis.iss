@@ -40,7 +40,7 @@ WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExeName}
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Nexis - File Integrity & Host Intrusion Detection Monitor (Build 1.0.0.2-user-shortcuts)
+VersionInfoDescription=Nexis - File Integrity & Host Intrusion Detection Monitor (Build 1.0.0.3-interactive-shortcuts)
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
 
@@ -54,10 +54,10 @@ Source: "..\dist\Nexis\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\packaging\Nexis.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-; Dedicated Start Menu program group in user's profile: Programs\Nexis\Nexis.lnk
-Name: "{userprograms}\{#MyAppName}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\Nexis.ico"
-; Desktop shortcut on user's actual Desktop (dynamically resolves OneDrive-redirected desktop)
-Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\Nexis.ico"
+; Dedicated Start Menu program group in user's profile: Programs\Nexis\Nexis.lnk (interactive console)
+Name: "{userprograms}\{#MyAppName}\{#MyAppName}"; Filename: "{cmd}"; Parameters: "/k """"{app}\{#MyAppExeName}"""""; WorkingDir: "{app}"; IconFilename: "{app}\Nexis.ico"
+; Desktop shortcut on user's actual Desktop (interactive console)
+Name: "{userdesktop}\{#MyAppName}"; Filename: "{cmd}"; Parameters: "/k """"{app}\{#MyAppExeName}"""""; WorkingDir: "{app}"; IconFilename: "{app}\Nexis.ico"
 
 [UninstallDelete]
 ; Clean up the user program group directory if empty after shortcut removal
