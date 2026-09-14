@@ -40,7 +40,7 @@ WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExeName}
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Nexis - File Integrity & Host Intrusion Detection Monitor (Build 1.0.0.3-interactive-shortcuts)
+VersionInfoDescription=Nexis - File Integrity & Host Intrusion Detection Monitor (Release 1.0.0-final-icon)
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
 
