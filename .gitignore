@@ -28,3 +28,4 @@ dependency-reduced-pom.xml
 
 # Packaging output
 /dist/
+/installer-output/
