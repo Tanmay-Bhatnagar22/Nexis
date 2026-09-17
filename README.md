@@ -520,18 +520,72 @@ The test suite includes **186 tests across 20 test classes** covering:
 
 ## Screenshots
 
-> Screenshots can be added to the `docs/` directory and referenced here.
-
 | Screenshot | Description |
 |---|---|
-| *CLI Startup Screen* | Nexis startup banner displayed when launched without arguments |
-| *Help Screen* | Available commands and usage information |
-| *Baseline Creation* | Successful baseline creation with file count and save path |
-| *Clean Scan* | Integrity scan showing all files unchanged |
-| *Integrity Violations* | Scan detecting modified, new, and deleted files |
-| *Watch Mode* | Real-time monitoring with live event alerts |
-| *Security Report* | Structured report with severity breakdown and critical event details |
-| *Log File* | Contents of `logs/nexis.log` showing persistent event records |
+| [CLI Startup Screen](#1-cli-startup-screen) | Nexis startup banner displayed when launched without arguments |
+| [Help Screen](#2-help-screen) | Available commands and usage information |
+| [Baseline Creation](#3-baseline-creation) | Successful baseline creation with file count and save path |
+| [Clean Scan](#4-clean-scan) | Integrity scan showing all files unchanged |
+| [Integrity Violations](#5-integrity-violations) | Scan detecting modified, new, and deleted files |
+| [Watch Mode](#6-watch-mode) | Real-time monitoring with live event alerts |
+| [Security Report](#7-security-report) | Structured report with severity breakdown and critical event details |
+| [Log File](#8-log-file) | Contents of `logs/nexis.log` showing persistent event records |
+
+---
+
+### 1. CLI Startup Screen
+Nexis startup banner displayed when launched without arguments.
+
+![CLI Startup Screen](Screenshots/CLI%20Startup%20Screen.png)
+
+---
+
+### 2. Help Screen
+Complete command reference, options, and usage information.
+
+![Help Screen](Screenshots/Help%20Screen.png)
+
+---
+
+### 3. Baseline Creation
+Establishing a trusted SHA-256 cryptographic baseline of monitored files.
+
+![Baseline Creation](Screenshots/Baseline%20Creation.png)
+
+---
+
+### 4. Clean Scan
+Integrity scan showing all files matching their baseline hashes (status: CLEAN).
+
+![Clean Scan](Screenshots/Scan.png)
+
+---
+
+### 5. Integrity Violations
+Detection of modified files (SHA-256 hash mismatch), newly created files, and deleted files.
+
+![Integrity Violations](Screenshots/Integrity%20Violations.png)
+
+---
+
+### 6. Watch Mode
+Real-time directory monitoring capturing filesystem modifications and alerting on integrity violations.
+
+![Watch Mode](Screenshots/Watch%20Mode.png)
+
+---
+
+### 7. Security Report
+Structured report showing event statistics, breakdown by category, and detailed critical events.
+
+![Security Report](Screenshots/Security%20Report.png)
+
+---
+
+### 8. Log File
+Contents of `logs/nexis.log` showing persistent pipe-delimited security audit records.
+
+![Log File](Screenshots/Log%20File.png)
 
 ---
 
